@@ -38,7 +38,7 @@ struct NodoFila{
 };
 
 struct Atraccion{
-    int estado; //0 -> Operativa, 1 -> En mantenimiento, 2 ->  Fuera de servicio, 3 -> Cerrdada por horario
+    int estado; /*0 -> Operativa, 1 -> En mantenimiento, 2 ->  Fuera de servicio, 3 -> Cerrdada por horario*/
     int capacidad;
     int duracion; /*duración en minutos*/
     float alturaMinima;/*altura en metros*/
