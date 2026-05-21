@@ -70,8 +70,8 @@ struct Parque {
     int recaudacionTotal;
     int totalVisitantes;
     struct Zona **zonas;
-    int pLibreZonas;
-    struct NodoVisitante *headVisitantes;
+    int pLibreZonas; /*pLibre para array de zonas*/
+    struct NodoVisitante *headVisitantes; /*head a la raiz de arbol visitantes*/
 };
 
 int main() {
