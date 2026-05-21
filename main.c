@@ -38,7 +38,7 @@ struct NodoFila{
 };
 
 struct Atraccion{
-    int estado; //0 -> Operativa, 1 -> En mantenimiento, 2 ->  Fuera de servicio, 3 -> Cerrdada por horario
+    int estado; /*0 -> Operativa, 1 -> En mantenimiento, 2 ->  Fuera de servicio, 3 -> Cerrdada por horario */
     int capacidad;
     int duracion; /*duración en minutos*/
     float alturaMinima;/*altura en metros*/
@@ -74,7 +74,7 @@ struct Parque {
     struct NodoVisitante *headVisitantes;
 };
 
-int main() {
+int main(){
     printf("Hola profe ponganos un 7");
     return 0;
 }
