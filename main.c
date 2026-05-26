@@ -71,6 +71,8 @@ struct Zona{
 };
 
 
+
+
 struct Parque {
     int recaudacionTotal;
     int totalVisitantes;
@@ -78,6 +80,69 @@ struct Parque {
     int pLibreZonas; /*pLibre para array de zonas*/
     struct NodoVisitante *headVisitantes; /*head a la raiz de arbol visitantes*/
 };
+
+
+//Retorna un arreglo dinamico de punteros a las atracciones NO OPERATIVAS//
+
+
+
+int NoOperativasEnZona (struct NodoAtraccion *headAtracciones) {
+    int contador = 0;
+    struct NodoAtraccion *rec = headAtracciones->sig;
+
+    while (rec != NULL) {
+        if (rec->datos->estado != 0) {
+            contador++;
+        }
+        rec = rec->sig;
+    }
+
+    return contador;
+}
+
+int contarNoOperativas (struct Zona ** zonas, int plibre) {
+    int contador = 0;
+    int i;
+    for (i = 0; i < plibre; i++) {
+        if(zonas[i] != NULL) {
+            contador+= NoOperativasEnZona(zonas[i]->headAtracciones);
+        }
+    }
+
+    return contador;
+}
+
+
+struct Atraccion ** NoOperativas (struct Zona ** zonas, int plibre) {
+    struct Atraccion ** ArregloNoOperativas;
+    int cantidadNoOperativas;
+    int i;
+    int posicion = 0;
+    struct NodoAtraccion *rec = NULL;
+
+    cantidadNoOperativas = contarNoOperativas (zonas, plibre);
+    if (cantidadNoOperativas == 0) return NULL;
+
+    ArregloNoOperativas = (struct Atraccion **) malloc(cantidadNoOperativas * sizeof (struct Atraccion *));
+
+    for (i = 0;  i <plibre; i++) {
+        if(zonas[i] != NULL) {
+            rec = zonas[i]->headAtracciones->sig;
+            while (rec != NULL) {
+                if (rec->datos->estado != 0) {
+                    ArregloNoOperativas[posicion] = rec->datos;
+                    posicion++;
+                }
+                rec = rec->sig;
+            }
+        }
+    }
+
+    return ArregloNoOperativas;
+}
+
+//
+
 
 int main() {
     printf("Hola profe ponganos un 7");
