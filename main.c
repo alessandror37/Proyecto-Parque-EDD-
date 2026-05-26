@@ -141,7 +141,66 @@ struct Atraccion ** NoOperativas (struct Zona ** zonas, int plibre) {
     return ArregloNoOperativas;
 }
 
-//
+// Qué visitantes siguen dentro del parque,
+
+int CantidadEnParque (struct NodoVisitante *headVisitantes) {
+    int contador = 0;
+    struct Visitante *datos;
+
+    if (headVisitantes == NULL) return 0;
+
+    datos = headVisitantes->datos;
+
+    if (datos->zonaActual != NULL) {
+
+        contador++;
+
+    }
+
+    contador +=CantidadEnParque (headVisitantes->der);
+    contador += CantidadEnParque (headVisitantes->izq);
+
+    return contador;
+}
+
+void RecorrerArbolAñadiendo (struct NodoVisitante *headVisitantes, struct Visitante ** arreglo, int *posicion) {
+    struct Visitante *datos;
+    if (headVisitantes == NULL) return;
+    datos = headVisitantes->datos;
+
+    RecorrerArbolAñadiendo(headVisitantes->izq,arreglo,posicion);
+
+
+    if (datos->zonaActual != NULL) {
+        arreglo[*posicion] = datos;
+        (*posicion)++;
+    }
+
+
+    RecorrerArbolAñadiendo(headVisitantes->der,arreglo,posicion);
+
+}
+
+struct Visitante ** DentroDelParque (struct Parque *IbcLandia) {
+    struct Visitante ** VisitantesEnElParque;
+    int contador;
+    int posicion = 0;
+
+     if (IbcLandia == NULL) return NULL;
+
+    contador = CantidadEnParque (IbcLandia->headVisitantes);
+
+    if (contador == 0) return NULL;
+
+    VisitantesEnElParque = (struct Visitante **) malloc (contador * sizeof (struct Visitante *));
+
+    RecorrerArbolAñadiendo(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
+
+    return VisitantesEnElParque;
+
+
+}
+
 
 
 int main() {
