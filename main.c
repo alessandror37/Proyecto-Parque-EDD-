@@ -519,6 +519,27 @@ int DineroRecaudadoDiario (struct NodoVisitante *headVisitantes) {
 
 }
 
+// cuantos integrantes visitantes ingresaron ese dia teniendo en cuenta de que un visitante puede entrar mas de una vez el mismo dia //
+int VisitantesDelDia (struct NodoVisitante *headVisitantes) {
+    int contador = 0;
+    struct Visitante *datos;
+
+    if (headVisitantes == NULL) return 0;
+
+    datos = headVisitantes->datos;
+    if (datos != NULL) {
+        // recorrer entradas tira el monto de todas las entradas del dia de la persona, si pisó aunque sea una vez el parque su monto sera distinto de 0//
+        if (recorrerEntradas(datos->headEntradas) != 0) {
+            contador++;
+        }
+    }
+
+    contador += VisitantesDelDia(headVisitantes->izq);
+    contador += VisitantesDelDia(headVisitantes->der);
+
+    return contador;
+}
+
 
 
 
