@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 
 
@@ -14,10 +15,9 @@ struct Entrada{
     int idEntrada;
     int tipo; /*0-> Entrada general, 1-> Pase infantil, 2-> Entrada familiar, 3 -> Pase VIP*/
     int valor;
-    int estado; /*0-> activa, 1-> utilizada, 2->anulada, 3-> vencida */
-    char *fecha;
+    int estado; /*0-> activa, 1-> utilizada, 2->anulada, 3-> vencida  */
+    char *fechaUsada;
 };
-
 
 /*Lista simplemente enlazada con nodo fantasma*/
 struct NodoEntrada{
@@ -25,7 +25,7 @@ struct NodoEntrada{
     struct NodoEntrada *sig;
 };
 
-struct	Visitante{
+struct Visitante{
     int idVisitante; /*Al ser manejados con árboles, vamos a tener que investigar sobre como manejar los ids para
     obtener un arbol binario*/
     int boolEstaEnParque; /*0-> No esta en parque, 1 -> Si esta en parque*/
@@ -48,7 +48,8 @@ struct NodoFila{
 };
 
 struct Atraccion{
-    int estado; /*0 -> Operativa, 1 -> En mantenimiento, 2 ->  Fuera de servicio, 3 -> Cerrdada por horario*/
+    char *nombre;
+    int estado; /*0 -> Operativa, 1 -> En mantenimiento, 2 -> Fuera de servicio, 3 -> Cerrada por horario */
     int capacidad;
     struct Visitante visitantesEnAtraccion[CAPACIDAD_MAX]; /*La capacidad real de la atracción es la misma que se
     encuentra dentro del struct y es la que se va a tomar en cuenta para la lógica de las funciones*/
@@ -65,7 +66,6 @@ struct NodoAtraccion{
     struct NodoAtraccion *ant,*sig;
 };
 
-
 struct Zona{
     char *nombre;
     int codigo;
@@ -77,9 +77,6 @@ struct Zona{
     struct NodoAtraccion *headAtracciones; /*head a la lista de atracciones*/
 };
 
-
-
-
 struct Parque {
     int recaudacionTotal;
     int totalVisitantes;
@@ -87,6 +84,17 @@ struct Parque {
     int pLibreZonas; /*pLibre para array de zonas*/
     struct NodoVisitante *headVisitantes; /*head a la raiz de arbol visitantes*/
 };
+
+char *pasarAMinus(char *cadena){
+    int i;
+    int largo = strlen(cadena) + 1;
+    char *NuevaCadena = (char *)malloc(sizeof(char) * largo);
+
+    for(i = 0; cadena[i] != '\0'; i++){
+        NuevaCadena[i] = tolower((unsigned char)cadena[i]);
+    }
+    return NuevaCadena;
+
 
 struct Visitante *buscarVisitantePorID(struct NodoVisitante *raiz, int idVisitanteBuscar) {
     if (raiz == NULL) return NULL;
@@ -357,6 +365,129 @@ int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
 }
 
 
+int main(void) {
+    int opcionMenu, c;
+    opcionMenu = 1;
+    srand(time(NULL)); /*Establece la semilla para la funcion rand(), para que cambien sus resultados en cada ejecucion del programa*/
+
+    printf("Bienvenido al menu de IBCLandia\n");
+    printf("1.- Menu de visitantes\n");
+    printf("2.- Menu de entradas \n");
+    printf("3.- Menu de atracciones\n");
+    printf("4.- Menu de zonas\n");
+    printf("5.- Menu de datos\n");
+    printf("0.- Cerrar programa");
+    printf("\n");
+
+    while (opcionMenu != 0){
+        printf("Ingrese operacion deseada: ");
+        scanf("%d",&opcionMenu);
+        printf("\n");
+        while ((c=getchar()) != '\n' && c != EOF); /*Esta línea limpia el buffer del teclado*/
+
+        switch (opcionMenu) {
+            case 1:
+                mostrarMenuVisitantes();
+            case 2:
+                /*mostrarMenuEntradas();*/
+            default:
+                printf("Ingrese una opcion valida. \n");
+        }
+
+        }
+    printf("Cerrando programa. ¡Que tengas un dia IBCtastico!");
+
+}
+
+struct NodoAtraccion *crearAtraccion(){
+    /*Asignacion de memoria a los nuevos struct e inicialización de variables*/
+    struct Atraccion *atraccionNueva = malloc(sizeof(struct Atraccion));
+    struct NodoAtraccion *nuevoNodo = malloc(sizeof(struct NodoAtraccion));
+    char bufferNombre[100];
+
+    /* fase de llenado por parte del usuario */
+    printf("Ingrese el nombre de la atracción\n");
+    fgets(bufferNombre, 100, stdin);
+
+    bufferNombre[strcspn(bufferNombre, "\n")] = '\0';
+    atraccionNueva -> nombre = (char *)malloc(sizeof(char) * (strlen(bufferNombre) + 1) );
+    strcpy(atraccionNueva -> nombre, bufferNombre);
+
+    printf("Ingrese la capacidad de la atraccion\n");
+    scanf("%d", &(atraccionNueva -> capacidad));
+
+    printf("Ingrese (en minutos) cuanto tiempo dura el recorrido de la atracción\n");
+    scanf("%d", &(atraccionNueva -> duracion));
+
+    printf("Ingrese (en metros, formato x.xx) la altura minima para subir a la atracción\n");
+    scanf("%f", &(atraccionNueva -> alturaMinima));
+
+    printf("Ingrese la edad minima para subir a la atracción\n");
+    scanf("%d", &(atraccionNueva -> edadMinima));
+
+    /* valores default de la atracción */
+    atraccionNueva -> visitantesTotales = 0;
+    atraccionNueva -> estado = 2; /* fuera de servicio*/
+    atraccionNueva -> headFila = NULL;
+
+    nuevoNodo -> datos = atraccionNueva;
+    nuevoNodo -> sig = NULL;
+    nuevoNodo -> ant = NULL;
+
+    return nuevoNodo;
+}
+
+void agregarAtraccion(struct Zona **zonas, int *pLibreZonas){
+    struct NodoAtraccion *atraccionNueva = NULL;
+    struct NodoAtraccion *rec;
+    struct Zona *zonaElegida;
+    int i, zona;
+
+    atraccionNueva = crearAtraccion();
+
+    /*Selección de zona*/
+    printf("==============================================\n");
+    printf("Lista de Zonas\n");
+    printf("==============================================\n");
+
+    for(i = 0; i < *pLibreZonas; i++){
+        printf("%d: %s\n", i, zonas[i] -> nombre);
+    }
+    printf("\n");
+
+    scanf("Ingrese el numero de la zona a la que desea agregar la nueva atracción %d\n", &zona);
+    if(zona > *pLibreZonas){
+        do{
+            scanf("Ingrese un numero válido %d\n", &zona);
+        }while(zona > *pLibreZonas);
+    }
+
+    /*Agregado de la atraccion nueva a la lista de atracciones*/
+    zonaElegida = zonas[i];
+    rec = zonaElegida -> headAtracciones -> sig;
+
+    while(rec -> sig != NULL){
+        rec = rec -> sig;
+    }
+
+    rec -> sig = atraccionNueva;
+    rec -> sig -> ant = rec;
+    rec -> sig -> sig = NULL;
+}
+
+void cerrarAtraccion(struct NodoAtraccion *atraccionACerrar, int razon){
+
+    if(razon != 3){
+        printf("Ingrese la razon de cierre\n");
+        printf("1 = En Mantenimiento\n");
+        printf("2 = Fuera de servicio\n");
+        scanf("%d", &razon);
+    }
+
+    /* cambia el estado y vacia la fila de espera */
+    atraccionACerrar -> datos -> estado = razon;
+    atraccionACerrar -> datos -> headFila -> sig = atraccionACerrar -> datos -> headFila;
+}
 
 int main(void) {
     int opcionMenu, c;
@@ -391,3 +522,5 @@ int main(void) {
     printf("Cerrando programa. ¡Que tengas un dia IBCtastico!");
 
 }
+  
+  
