@@ -87,7 +87,7 @@ struct Parque {
     struct NodoVisitante *headVisitantes; /*head a la raiz de arbol visitantes*/
 };
 
-char *pasarAMinus(char *cadena){
+char *pasarAMinus(char *cadena) {
     int i;
     int largo = strlen(cadena) + 1;
     char *NuevaCadena = (char *)malloc(sizeof(char) * largo);
@@ -96,7 +96,7 @@ char *pasarAMinus(char *cadena){
         NuevaCadena[i] = tolower((unsigned char)cadena[i]);
     }
     return NuevaCadena;
-
+}
 
 struct Visitante *buscarVisitantePorID(struct NodoVisitante *raiz, int idVisitanteBuscar) {
     if (raiz == NULL) return NULL;
@@ -112,6 +112,7 @@ struct Visitante *buscarVisitantePorID(struct NodoVisitante *raiz, int idVisitan
 
 int crearIdNuevoVisitante(struct NodoVisitante *raiz) {
     int idNuevo = 0, esUnica = 0;
+    if (raiz==NULL) return 50000;
     while (esUnica != 1) {
         idNuevo = rand() % (MAX_ID_VISITANTES + 1);
         if (buscarVisitantePorID(raiz, idNuevo) == NULL) {
@@ -144,25 +145,34 @@ struct Visitante *crearVisitante(struct NodoVisitante *raiz) {
 
     return visitanteNuevo;
 }
+
 struct NodoVisitante *buscarNodoParaVisitanteNuevo(struct NodoVisitante *raiz, int idVisitanteNuevo) {
     struct NodoVisitante *rec;
     if (raiz != NULL) {
         rec = raiz;
         while (rec!= NULL) {
             if (rec->datos->idVisitante < idVisitanteNuevo) {
+                if (rec->der == NULL) return rec;
                 rec = rec->der;
             }else {
+                if (rec->izq == NULL) return rec;
                 rec = rec->izq;
             }
         }
     }
+    return NULL;
 }
 
-struct NodoVisitante *crearYAgregarNodoVisitante(struct NodoVisitante *raiz) {
-    struct NodoVisitante *nodoNuevo = malloc(sizeof(struct NodoVisitante));
-    nodoNuevo->datos=crearVisitante(raiz);
-
-    return nodoNuevo;
+void crearYAgregarNodoVisitante(struct NodoVisitante **raiz) {
+    struct NodoVisitante *nodoNuevo, *nodoAnterior;
+    nodoNuevo = malloc(sizeof(struct NodoVisitante));
+    nodoNuevo->datos=crearVisitante(*raiz);
+    nodoNuevo->izq = NULL;
+    nodoNuevo->der = NULL;
+    nodoAnterior = buscarNodoParaVisitanteNuevo(*raiz,nodoNuevo->datos->idVisitante);
+    if (nodoAnterior == NULL) *raiz = nodoNuevo;
+    else if (nodoAnterior->datos->idVisitante<nodoNuevo->datos->idVisitante) nodoAnterior->der = nodoNuevo;
+    else nodoAnterior->izq = nodoNuevo;
 }
 
 int contarVisitantesEnParque(struct NodoVisitante *raiz) {
@@ -177,7 +187,29 @@ int contarVisitantesEnParque(struct NodoVisitante *raiz) {
     return cont + raiz->datos->boolEstaEnParque;
 }
 
-struct Entrada *buscarEntradaPorId(*struct NodoVisitante raiz, int idEntrada) {
+struct Entrada *buscarEntradaPorIdEnVisitante(struct NodoEntrada *head, int idEntrada) {
+    struct NodoEntrada *rec;
+    if (head != NULL) {
+        rec = head ->sig;
+        while (rec!=NULL) {
+            if (rec->datos->idEntrada == idEntrada) return rec->datos;
+            rec->sig;
+        }
+    }
+    return NULL;
+}
+
+struct Entrada *buscarEntradaPorId(struct NodoVisitante *raiz, int idEntrada) {
+    struct NodoVisitante *rec;
+    struct Entrada *entradaBuscar;
+    if (raiz!=NULL) {
+        rec=raiz;
+        while (rec!=NULL) {
+            entradaBuscar = buscarEntradaPorIdEnVisitante(rec->datos->headEntradas,idEntrada);
+            if (entradaBuscar != NULL) return entradaBuscar;
+            else if ()
+        }
+    }
 
 }
 
