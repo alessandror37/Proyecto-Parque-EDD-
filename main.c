@@ -365,39 +365,6 @@ int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
 }
 
 
-int main(void) {
-    int opcionMenu, c;
-    opcionMenu = 1;
-    srand(time(NULL)); /*Establece la semilla para la funcion rand(), para que cambien sus resultados en cada ejecucion del programa*/
-
-    printf("Bienvenido al menu de IBCLandia\n");
-    printf("1.- Menu de visitantes\n");
-    printf("2.- Menu de entradas \n");
-    printf("3.- Menu de atracciones\n");
-    printf("4.- Menu de zonas\n");
-    printf("5.- Menu de datos\n");
-    printf("0.- Cerrar programa");
-    printf("\n");
-
-    while (opcionMenu != 0){
-        printf("Ingrese operacion deseada: ");
-        scanf("%d",&opcionMenu);
-        printf("\n");
-        while ((c=getchar()) != '\n' && c != EOF); /*Esta línea limpia el buffer del teclado*/
-
-        switch (opcionMenu) {
-            case 1:
-                mostrarMenuVisitantes();
-            case 2:
-                /*mostrarMenuEntradas();*/
-            default:
-                printf("Ingrese una opcion valida. \n");
-        }
-
-        }
-    printf("Cerrando programa. ¡Que tengas un dia IBCtastico!");
-
-}
 
 struct NodoAtraccion *crearAtraccion(){
     /*Asignacion de memoria a los nuevos struct e inicialización de variables*/
