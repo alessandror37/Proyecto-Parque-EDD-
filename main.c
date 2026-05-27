@@ -10,7 +10,7 @@ struct Entrada{
     int idEntrada;
     int tipo; /*0-> Entrada general, 1-> Pase infantil, 2-> Entrada familiar, 3 -> Pase VIP*/
     int valor;
-    char *estado;
+    int estado; /*0-> activa, 1-> utilizada, 2->anulada, 3-> vencida */
     char *fecha;
 };
 
@@ -265,6 +265,38 @@ struct Atraccion *AtraccionMayorFilaEntreZonas(struct Zona ** zonas, int plibre 
 
 
 
+// cuantas entradas se utilizaron ese dia comparar con fecha actual global//
+
+int cantidadDeEntradasDiaria (struct NodoEntrada *nodoEntrada) {
+    int contador = 0;
+    struct NodoEntrada *rec;
+    if (nodoEntrada->sig == NULL) return 0;
+    rec = nodoEntrada->sig;
+    while (rec != NULL) {
+        if (rec->datos->estado == 0 && strcmp(rec->datos->fecha, fechaActual) == 0) {
+            contador++;
+        }
+        rec = rec->sig;
+    }
+    return contador;
+}
+
+int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
+    int contador = 0;
+    struct Visitante *actual;
+
+    if (headVisitantes == NULL) return 0;
+
+    actual = headVisitantes->datos;
+
+    contador += cantidadDeEntradasDiarias(actual->headEntradas);
+
+    contador += cantidadDeEntradasEnArbol(headVisitantes->izq);
+    contador += cantidadDeEntradasEnArbol(headVisitantes->der);
+
+    return contador;
+
+}
 
 
 
