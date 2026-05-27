@@ -4,11 +4,14 @@
 
 #define CAPACIDAD_MAX 100
 
+char fechaActual[10];
+
 struct Entrada{
     int idEntrada;
     int tipo; /*0-> Entrada general, 1-> Pase infantil, 2-> Entrada familiar, 3 -> Pase VIP*/
     int valor;
     char *estado;
+    char *fecha;
 };
 
 
@@ -151,7 +154,7 @@ int CantidadEnParque (struct NodoVisitante *headVisitantes) {
 
     datos = headVisitantes->datos;
 
-    if (datos->zonaActual != NULL) {
+    if (datos->boolEstaEnParque == 1) {
 
         contador++;
 
@@ -163,7 +166,7 @@ int CantidadEnParque (struct NodoVisitante *headVisitantes) {
     return contador;
 }
 
-void RecorrerArbolAñadiendo (struct NodoVisitante *headVisitantes, struct Visitante ** arreglo, int *posicion) {
+void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visitante ** arreglo, int *posicion) {
     struct Visitante *datos;
     if (headVisitantes == NULL) return;
     datos = headVisitantes->datos;
@@ -171,7 +174,7 @@ void RecorrerArbolAñadiendo (struct NodoVisitante *headVisitantes, struct Visit
     RecorrerArbolAñadiendo(headVisitantes->izq,arreglo,posicion);
 
 
-    if (datos->zonaActual != NULL) {
+    if (datos->boolEstaEnParque == 1) {
         arreglo[*posicion] = datos;
         (*posicion)++;
     }
@@ -181,7 +184,7 @@ void RecorrerArbolAñadiendo (struct NodoVisitante *headVisitantes, struct Visit
 
 }
 
-struct Visitante ** DentroDelParque (struct Parque *IbcLandia) {
+struct Visitante **DentroDelParque (struct Parque *IbcLandia) {
     struct Visitante ** VisitantesEnElParque;
     int contador;
     int posicion = 0;
@@ -200,6 +203,71 @@ struct Visitante ** DentroDelParque (struct Parque *IbcLandia) {
 
 
 }
+
+
+// atraccion con mas visitantes en espera //
+
+int cantidadEnFila (struct  NodoFila *fila) {
+    int contador = 0;
+    struct NodoFila *rec;
+    if (fila->sig == NULL) return 0;
+
+    rec = fila->sig;
+
+    while (rec != NULL) {
+        contador++;
+        rec = rec->sig;
+
+    }
+    return contador;
+
+}
+
+struct Atraccion *atraccionConMasEspera (struct NodoAtraccion *headAtracciones, int *cantFila) {
+    struct NodoAtraccion *rec;
+    struct Atraccion *MayorFila = NULL;
+    int cantidadEnEsaFila;
+    if (headAtracciones->sig == NULL) return NULL;
+    rec = headAtracciones->sig;
+    while (rec != NULL) {
+        cantidadEnEsaFila = cantidadEnFila(rec->datos->headFila);
+        if (cantidadEnEsaFila > *cantFila) {
+            MayorFila = rec->datos
+            *cantFila = cantidadEnEsaFila;
+        }
+        rec = rec->sig;
+
+
+    }
+
+    return MayorFila;
+}
+
+struct Atraccion *AtraccionMayorFilaEntreZonas(struct Zona ** zonas, int plibre ) {
+    struct Atraccion *atraccionCampeonaGlobal = NULL;
+    struct Atraccion *atraccionCandidataZona = NULL;
+    int cantidadEnFilaMayor = 0;
+    struct NodoAtraccion *atraccionesActuales = NULL;
+
+    if (zonas == NULL) return NULL;
+
+    for (int i = 0; i < plibre; i++) {
+        atraccionesActuales = zonas[i]->headAtracciones;
+        atraccionCandidataZona = atraccionConMasEspera(zonas[i]->headAtracciones, &cantidadEnFilaMayor);
+
+        if (atraccionCandidataZona != NULL) {
+            atraccionCampeonaGlobal = atraccionCandidataZona;
+        }
+    }
+
+    return atraccionCampeonaGlobal;
+}
+
+
+
+
+
+
 
 
 
