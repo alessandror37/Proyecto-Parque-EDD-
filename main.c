@@ -212,32 +212,12 @@ struct Atraccion ** NoOperativas (struct Zona ** zonas, int plibre) {
 
 // Qué visitantes siguen dentro del parque,
 
-int CantidadEnParque (struct NodoVisitante *headVisitantes) {
-    int contador = 0;
-    struct Visitante *datos;
-
-    if (headVisitantes == NULL) return 0;
-
-    datos = headVisitantes->datos;
-
-    if (datos->boolEstaEnParque == 1) {
-
-        contador++;
-
-    }
-
-    contador +=CantidadEnParque (headVisitantes->der);
-    contador += CantidadEnParque (headVisitantes->izq);
-
-    return contador;
-}
-
 void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visitante ** arreglo, int *posicion) {
     struct Visitante *datos;
     if (headVisitantes == NULL) return;
     datos = headVisitantes->datos;
 
-    RecorrerArbolAñadiendo(headVisitantes->izq,arreglo,posicion);
+    RecorrerArbolAnadiendo(headVisitantes->izq,arreglo,posicion);
 
 
     if (datos->boolEstaEnParque == 1) {
@@ -246,7 +226,7 @@ void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visita
     }
 
 
-    RecorrerArbolAñadiendo(headVisitantes->der,arreglo,posicion);
+    RecorrerArbolAnadiendo(headVisitantes->der,arreglo,posicion);
 
 }
 
@@ -257,13 +237,13 @@ struct Visitante **DentroDelParque (struct Parque *IbcLandia) {
 
      if (IbcLandia == NULL) return NULL;
 
-    contador = CantidadEnParque (IbcLandia->headVisitantes);
+    contador = contarVisitantesEnParque (IbcLandia->headVisitantes);
 
     if (contador == 0) return NULL;
 
     VisitantesEnElParque = (struct Visitante **) malloc (contador * sizeof (struct Visitante *));
 
-    RecorrerArbolAñadiendo(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
+    RecorrerArbolAnadiendo(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
 
     return VisitantesEnElParque;
 
@@ -361,6 +341,42 @@ int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
     contador += cantidadDeEntradasEnArbol(headVisitantes->der);
 
     return contador;
+
+}
+
+    // atraccion mas visitada, comparar variable de visitantes totales entre atracciiones y despues entre filas//
+struct Atraccion *MasVisitantesTotales (struct NodoAtraccion *headAtracciones) {
+    struct NodoAtraccion *rec;
+    struct Atraccion * masVisitantes = NULL;
+    int visitantesAnterior = 0;
+    if (headAtracciones->sig == NULL) return NULL;
+    rec = headAtracciones->sig;
+
+    while (rec != NULL) {
+        if (rec->datos->visitantesTotales > visitantesAnterior) {
+            visitantesAnterior = rec->datos->visitantesTotales;
+            masVisitantes = rec->datos;
+        }
+        rec = rec->sig;
+    }
+
+    return masVisitantes;
+}
+struct Atraccion *AtracccionMasVisitadaEntreZonas (struct Zona ** zonas, int plibre ) {
+    struct Atraccion *AtraccionConMasVisitantesTotales = NULL;
+    struct Atraccion *candidato= NULL;
+    int i;
+    if (zonas == NULL) return NULL;
+    for (i = 0; i < plibre; i++) {
+        candidato = MasVisitantesTotales(zonas[i]->headAtracciones);
+        if (candidato != NULL) {
+            if (AtraccionConMasVisitantesTotales == NULL || AtraccionConMasVisitantesTotales->visitantesTotales < candidato->visitantesTotales) {
+                AtraccionConMasVisitantesTotales = candidato;
+            }
+        }
+    }
+
+    return AtraccionConMasVisitantesTotales;
 
 }
 
