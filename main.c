@@ -85,7 +85,7 @@ struct Parque {
     struct NodoVisitante *headVisitantes; /*head a la raiz de arbol visitantes*/
 };
 
-char *pasarAMinus(char *cadena){
+char *pasarAMinus(char *cadena) {
     int i;
     int largo = strlen(cadena) + 1;
     char *NuevaCadena = (char *)malloc(sizeof(char) * largo);
@@ -94,7 +94,7 @@ char *pasarAMinus(char *cadena){
         NuevaCadena[i] = tolower((unsigned char)cadena[i]);
     }
     return NuevaCadena;
-
+}
 
 struct Visitante *buscarVisitantePorID(struct NodoVisitante *raiz, int idVisitanteBuscar) {
     if (raiz == NULL) return NULL;
@@ -237,7 +237,7 @@ void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visita
     if (headVisitantes == NULL) return;
     datos = headVisitantes->datos;
 
-    RecorrerArbolAñadiendo(headVisitantes->izq,arreglo,posicion);
+    RecorrerArbolAnadiendo(headVisitantes->izq,arreglo,posicion);
 
 
     if (datos->boolEstaEnParque == 1) {
@@ -246,7 +246,7 @@ void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visita
     }
 
 
-    RecorrerArbolAñadiendo(headVisitantes->der,arreglo,posicion);
+    RecorrerArbolAnadiendo(headVisitantes->der,arreglo,posicion);
 
 }
 
@@ -263,7 +263,7 @@ struct Visitante **DentroDelParque (struct Parque *IbcLandia) {
 
     VisitantesEnElParque = (struct Visitante **) malloc (contador * sizeof (struct Visitante *));
 
-    RecorrerArbolAñadiendo(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
+    RecorrerArbolAnadiendo(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
 
     return VisitantesEnElParque;
 
@@ -455,6 +455,50 @@ void cerrarAtraccion(struct NodoAtraccion *atraccionACerrar, int razon){
     atraccionACerrar -> datos -> estado = razon;
     atraccionACerrar -> datos -> headFila -> sig = atraccionACerrar -> datos -> headFila;
 }
+
+
+void mostrarAtraccionesMasVisitadasEnZona(struct NodoAtraccion *original) {
+    struct NodoAtraccion *actual;
+    int max = 0;
+    actual = original;
+    do {
+        actual = actual->sig;
+        if (max == 0) {
+            max = actual->datos->visitantesTotales;
+        }else if (actual->datos->visitantesTotales > max) {
+            max = actual->datos->visitantesTotales;
+        }
+
+    }while (actual->sig != NULL);
+
+    do {
+        actual = actual->sig;
+        if (max == actual->datos->visitantesTotales) {
+            printf(actual->datos->nombre);
+        }
+    }while (actual->sig != NULL);
+}
+
+void listarAtraccionesNoDisponiblesEnZona(struct NodoAtraccion *original) {
+    struct NodoAtraccion *actual;
+    actual = original;
+    do {
+        actual = actual->sig;
+        if (actual->datos->estado != 0) {
+            printf(actual->datos->nombre);
+        }
+    }while(actual->sig != NULL);
+}
+
+
+/*En minutos*/
+int tiempoEsperaEstimado(struct Atraccion *atraccion) {
+    int fila;
+    fila = cantidadEnFila(atraccion->headFila);
+    return fila/atraccion->capacidad*atraccion->duracion;
+}
+
+
 
 int main(void) {
     int opcionMenu, c;
