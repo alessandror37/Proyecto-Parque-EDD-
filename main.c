@@ -541,6 +541,126 @@ int VisitantesDelDia (struct NodoVisitante *headVisitantes) {
 }
 
 
+// top 3 atracciones con las fila mas larga //
+
+struct ReporteFilas {
+    struct atraccion *datos;
+    int tamFila;
+}
+int contarAtracciones (struct NodoAtraccion *headAtraccion) {
+    int contador = 0;
+
+    struct NodoAtraccion *rec;
+
+    if (headAtraccion->sig == NULL) return 0;
+
+    rec = headAtraccion->sig;
+    while (rec != NULL) {
+        contador++;
+        rec = rec->sig;
+    }
+    return contador;
+}
+
+int TotalAtracciones (struct Zona **Zonas,int plibre) {
+    int contador = 0;
+    int i;
+    for (i = 0; i < plibre; i++) {
+        contador += contarAtracciones(Zonas[i]->headAtracciones);
+    }
+    return contador;
+
+}
+
+void CopiarAtracciones (struct ReporteFilas **repFilas, struct Zona *ZonaActual, int * pos) {
+    struct NodoAtracciones *rec;
+
+    struct Atraccion *atraccionActual;
+
+    if (ZonaActual->headAtracciones == NULL) return;
+
+    rec = ZonaActual->headAtracciones->sig;
+    while (rec != NULL) {
+        atraccionActual = rec->datos;
+        if (atraccionActual != NULL) {
+
+            repFilas[*pos] = (struct ReporteFilas *) malloc(sizeof(struct ReporteFilas));
+
+            // verificar que no haya fallado el malloc x seguridad nomas//
+            if (repFilas[*pos] != NULL) {
+                repFilas[*pos]->datos = atraccionActual;
+                repFilas[*pos]->tamFila = atraccionActual->mayorFilaRegistrada;
+                (*pos)++;
+            }
+        }
+        rec = rec->sig;
+    }
+    return;
+}
+
+void OrdenarAtracciones(struct ReporteFilas **reporte,int tam) {
+    int i, j;
+    struct ReporteFilas *temporal;
+
+    if (reporte == NULL || tam <= 1) return;
+
+    for (i = 0; i < tam - 1; i++) {
+        for (j = 0; j < tam - 1 - i; j++) {
+            if (reporte[j]->tamFila < reporte[j + 1]->tamFila) {
+                temporal = reporte[j];
+                reporte[j] = reporte[j + 1];
+                reporte[j + 1] = temporal;
+            }
+        }
+    }
+}
+
+struct ReporteFilas ** ArregloAtracciones (struct parque *IBCLandia) {
+    struct ReporteFilas **TodasLasAtracciones;
+    int tam;
+    int pos = 0;
+    int i;
+
+    if (IBCLandia == NULL) return NULL;
+
+    tam = TotalAtracciones(IBCLandia->zonas,IBCLandia->pLibreZonas);
+    TodasLasAtracciones = (struct ReporteFilas **) malloc(tam * sizeof(struct ReporteFilas *));
+
+    for (i = 0; i < IBCLandia->pLibreZonas; i++) {
+        CopiarAtracciones(TodasLasAtracciones, IBCLandia->zonas[i], &pos);
+    }
+
+    OrdenarAtracciones(TodasLasAtracciones, tam);
+
+    return TodasLasAtracciones;
+
+}
+
+void MostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struct parque *IBCLandia) {
+    struct Atraccion *Atraccion;
+    int cantAtracciones;
+    int i;
+    int limite;
+
+    if (reporte == NULL || IBCLandia == NULL) return;
+
+    cantAtracciones = TotalAtracciones(IBCLandia->zonas,IBCLandia->pLibreZonas);
+
+    if (cantAtracciones < 3) {
+        limite = cantAtracciones;
+    } else {
+        limite = 3;
+    }
+
+    printf("NOMBRE -> TAMAÑO FILA");
+
+    for (i = 0; i < limite; i++) {
+        printf("%s -> %d \n", atraccion[i]->datos->nombre, atraccion[i]->tamFila);
+    }
+}
+
+
+
 
 
 
