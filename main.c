@@ -380,6 +380,103 @@ struct Atraccion *AtracccionMasVisitadaEntreZonas (struct Zona ** zonas, int pli
 
 }
 
+// top 3 zonas mas concurridas, el struct de abajo sera un auxiliar //
+
+    struct ReporteZona {
+    struct Zona * datosZona;
+    int TotalPersonas;
+};
+
+int TotalPersonasEnZona (struct NodoVisitante * headVisitantes, int codigoBuscado) {
+    int contador = 0;
+    struct Visitante *actual;
+
+    if (headVisitantes == NULL) return 0;
+
+    actual = headVisitantes->datos;
+
+    if (actual->codigo ==  codigoBuscado) {
+        contador++;
+    }
+
+    contador+= TotalPersonasEnZona(headVisitantes->izq,codigoBuscado);
+    contador += TotalPersonasEnZona(headVisitantes->der, codigoBuscado);
+
+    return contador;
+}
+
+struct ReporteZona ** ArregloAuxiliar(struct parque *IBCLandia) {
+    struct ReporteZona **reporte;
+    int tam = IBCLandia->pLibreZonas
+    int i;
+
+    reporte = (struct ReporteZona **) malloc(tam * sizeof(struct ReporteZona *));
+
+    for (i = 0; i < tam; i++) {
+
+        reporte[i] = (struct ReporteZona *) malloc(sizeof(struct ReporteZona));
+
+        reporte[i]->datosZona = IBCLandia->zonas[i];
+        reporte[i]->TotalPersonas =TotalPersonasEnZona(IBCLandia->headVisitantes,IBCLandia->zonas[i]->codigo);
+    }
+
+    return reporte;
+}
+
+void OrdenarZonasMasOcupadas (struct ReporteZona ** reporte, int tam) {
+    int i,
+    int j;
+
+    struct ReporteZona *temporal;
+
+    if (reporte == NULL || tam == 0) return;
+
+    for (i = 0; i < tam - 1; i++) {
+        for (j = 0; j < tam - i - 1; j++) {
+            if (reporte[j]->TotalPersonas < reporte[j + 1]->TotalPersonas) {
+                temporal = reporte[j];
+                reporte[j] = reporte[j + 1];
+                reporte[j + 1] = temporal;
+            }
+        }
+    }
+}
+
+void MostrarZonasMasOcupadas (struct parque *IBCLandia) {
+    struct ReporteZona **reporte;
+    int tam;
+    int i;
+    if (IBCLandia == NULL) return;
+    tam = IBCLandia->pLibreZonas;
+    reporte = ArregloAuxiliar(IBCLandia);
+
+    OrdenarZonasMasOcupadas(reporte, tam);
+
+    if (tam >= 3) {
+        for (i = 0; i < 3; i++) {
+            printf("%s -> %d personas. \n ", reporte[i]->datosZona->nombre, reporte[i]->TotalPersonas);
+        }
+    }
+
+    if (tam == 2) {
+        for (i = 0; i < 2; i++) {
+            printf("%s -> %d personas. \n ", reporte[i]->datosZona->nombre, reporte[i]->TotalPersonas);
+        }
+    }
+
+    if (tam == 1) {
+        for (i = 0; i < 1; i++) {
+            printf("%s -> %d personas. \n ", reporte[i]->datosZona->nombre, reporte[i]->TotalPersonas);
+        }
+    }
+
+}
+
+
+
+
+
+
 
 
 struct NodoAtraccion *crearAtraccion(){
