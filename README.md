@@ -15,3 +15,4 @@
 # Dibujo de la estructura
 <img width="1621" height="1092" alt="Dibujo estructura" src="https://github.com/user-attachments/assets/71035bbe-d2b4-40e1-8ad9-c3790bfeecc9" />
 
+El que no haga nada será encerrado en un sotano con Diddy
