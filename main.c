@@ -58,6 +58,7 @@ struct Atraccion{
     int edadMinima;
     struct NodoFila *headFila; /*head a la lista de la fila de la atracción*/
     int visitantesTotales;
+    int mayorFilaRegistrada;
 };
 
 /*Lista doblemente enlazada con nodo fantasma*/
@@ -452,6 +453,8 @@ void MostrarZonasMasOcupadas (struct parque *IBCLandia) {
 
     OrdenarZonasMasOcupadas(reporte, tam);
 
+    printf("ZONAS MAS LLENAS DE MAYOR A MENOR\n");
+
     if (tam >= 3) {
         for (i = 0; i < 3; i++) {
             printf("%s -> %d personas. \n ", reporte[i]->datosZona->nombre, reporte[i]->TotalPersonas);
@@ -471,6 +474,53 @@ void MostrarZonasMasOcupadas (struct parque *IBCLandia) {
     }
 
 }
+
+
+// cuanto dinero se ha recaudado con las entradas //
+
+int recorrerEntradas (struct NodoEntradas *headEntradas) {
+    struct NodoEntradas *rec;
+    int recaudado = 0;
+    struct Entrada *enUso;
+
+    if (headEntradas == NULL) return 0;
+
+    rec = headEntradas->sig;
+
+
+    while (rec != NULL) {
+        enUso = rec->datos;
+        //asumi que solo las entradas usadas y de la fecha de hoy cuentan como lo recaudado diario//
+        if (strcmp(enUso->fecha, fechaActual) == 0 && enUso -> estado == 1) {
+            recaudado += enUso->valor;
+        }
+        rec = rec->sig;
+    }
+    return recaudado;
+}
+
+
+int DineroRecaudadoDiario (struct NodoVisitante *headVisitantes) {
+    struct Visitante *actual;
+    int recaudado = 0;
+
+    if (headVisitantes == NULL) return 0;
+
+    actual = headVisitantes->datos;
+
+    if (actual != NULL) {
+        recaudado += recorrerEntradas(actual->headEntradas);
+    }
+
+    recaudado += DineroRecaudadoDiario(headVisitantes->izq);
+    recaudado += DineroRecaudadoDiario(headVisitantes->der);
+
+    return recaudado;
+
+}
+
+
+
 
 
 
