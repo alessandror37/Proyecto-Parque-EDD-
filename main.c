@@ -566,7 +566,7 @@ int contarAtracciones (struct NodoAtraccion *headAtraccion) {
     }
     return contador;
 }
-/*cuenta las atracciones de todo el parque*/
+/*cuenta las atracciones del parque*/
 int TotalAtracciones (struct Zona **Zonas,int plibre) {
     int contador = 0;
     int i;
