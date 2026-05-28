@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#define CAPACIDAD_MAX 100
 
 char fechaActual[10];
 
@@ -22,6 +23,7 @@ struct NodoEntrada{
 struct Visitante{
     int idVisitante; /*Al ser manejados con árboles, vamos a tener que investigar sobre como manejar los ids para
     obtener un arbol binario*/
+    int boolEstaEnParque; /*0-> No esta en parque, 1 -> Si esta en parque*/
     char *rut;
     char *nombre;
     struct NodoEntrada *headEntradas; /*head lista entradas de cada visitante*/
@@ -44,6 +46,8 @@ struct Atraccion{
     char *nombre;
     int estado; /*0 -> Operativa, 1 -> En mantenimiento, 2 -> Fuera de servicio, 3 -> Cerrada por horario */
     int capacidad;
+    struct Visitante visitantesEnAtraccion[CAPACIDAD_MAX]; /*La capacidad real de la atracción es la misma que se
+    encuentra dentro del struct y es la que se va a tomar en cuenta para la lógica de las funciones*/
     int duracion; /*duración en minutos*/
     float alturaMinima;/*altura en metros*/
     int edadMinima;
