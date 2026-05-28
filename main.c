@@ -952,6 +952,48 @@ void cerrarAtraccion(struct NodoAtraccion *atraccionACerrar, int razon){
     atraccionACerrar -> datos -> headFila -> sig = atraccionACerrar -> datos -> headFila;
 }
 
+
+void mostrarAtraccionesMasVisitadasEnZona(struct NodoAtraccion *original) {
+    struct NodoAtraccion *actual;
+    int max = 0;
+    actual = original;
+    do {
+        actual = actual->sig;
+        if (max == 0) {
+            max = actual->datos->visitantesTotales;
+        }else if (actual->datos->visitantesTotales > max) {
+            max = actual->datos->visitantesTotales;
+        }
+
+    }while (actual->sig != NULL);
+
+    do {
+        actual = actual->sig;
+        if (max == actual->datos->visitantesTotales) {
+            printf(actual->datos->nombre);
+        }
+    }while (actual->sig != NULL);
+}
+
+void listarAtraccionesNoDisponiblesEnZona(struct NodoAtraccion *original) {
+    struct NodoAtraccion *actual;
+    actual = original;
+    do {
+        actual = actual->sig;
+        if (actual->datos->estado != 0) {
+            printf(actual->datos->nombre);
+        }
+    }while(actual->sig != NULL);
+}
+
+
+/*En minutos*/
+int tiempoEsperaEstimado(struct Atraccion *atraccion) {
+    int fila;
+    fila = cantidadEnFila(atraccion->headFila);
+    return fila/atraccion->capacidad*atraccion->duracion;
+}
+
 int seleccionDeZona(struct Zona **zonas, int pLibreZonas){
     int zona, i;
 
