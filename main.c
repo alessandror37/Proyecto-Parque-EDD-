@@ -185,7 +185,7 @@ int contarNoOperativas (struct Zona ** zonas, int plibre) {
     return contador;
 }
 
-//*retorna un arreglo dinamico de punteros con las zonas NO operatiivas*//
+//*retorna un arreglo dinamico de punteros con las atracciones NO operatiivas*//
 struct Atraccion ** NoOperativas (struct Zona ** zonas, int plibre) {
     struct Atraccion ** ArregloNoOperativas;
     int cantidadNoOperativas; /*contador para el malloc*/
@@ -288,7 +288,7 @@ struct Atraccion *atraccionConMasEspera (struct NodoAtraccion *headAtracciones, 
         /*comprueba si la cantidad en esa fila supera a la mayor fila entre las zonas anteriores*/
         cantidadEnEsaFila = cantidadEnFila(rec->datos->headFila);
         if (cantidadEnEsaFila > *cantFila) {
-            MayorFila = rec->datos
+            MayorFila = rec->datos;
             *cantFila = cantidadEnEsaFila;
         }
         rec = rec->sig;
@@ -349,7 +349,7 @@ int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
 
     actual = headVisitantes->datos;
     /*suma la cantidad de entradas del dia pertenecientes a ese visitante*/
-    contador += cantidadDeEntradasDiarias(actual->headEntradas);
+    contador += cantidadDeEntradasDiaria(actual->headEntradas);
     /*recorre la izquerda y la deerecha sumando al contador las entradas que cumplen*/
     contador += cantidadDeEntradasEnArbol(headVisitantes->izq);
     contador += cantidadDeEntradasEnArbol(headVisitantes->der);
@@ -368,7 +368,7 @@ struct Atraccion *MasVisitantesTotales (struct NodoAtraccion *headAtracciones) {
 
     if (headAtracciones->sig == NULL) return NULL;
 
-    rec = headAtracciones->sig;i
+    rec = headAtracciones->sig;
     /*recorrer las atracciones de una zona*/
     while (rec != NULL) {
         /*si la atraccion tiene mas visitantesTotales que la anterior se cambia el record de la zona*/
@@ -435,7 +435,7 @@ int TotalPersonasEnZona (struct NodoVisitante * headVisitantes, int codigoBuscad
 }
     /*ordena el arreglo dinamico de tipo ReporteZona de mayor a menor con un bubble sort*/
     void OrdenarZonasMasOcupadas (struct ReporteZona ** reporte, int tam) {
-    int i,
+    int i;
     int j;
 
     struct ReporteZona *temporal; /*guarda temporalmente para ordenar */
@@ -456,7 +456,7 @@ int TotalPersonasEnZona (struct NodoVisitante * headVisitantes, int codigoBuscad
 /*crea un arreglo dinamico de punteros de tipo ReporteZona, este guarda todas las zonas y el total de personas en esa zona*/
 struct ReporteZona ** ArregloReporteZona(struct parque *IBCLandia) {
     struct ReporteZona **reporte;
-    int tam = IBCLandia->pLibreZonas
+    int tam = IBCLandia->pLibreZonas;
     int i;
 
     reporte = (struct ReporteZona **) malloc(tam * sizeof(struct ReporteZona *));
@@ -481,8 +481,8 @@ struct ReporteZona ** ArregloReporteZona(struct parque *IBCLandia) {
 
 /*recorre las entradas y suma el valor de las entradas usadas que tienen fechaActual*/
     /*retorna el valor de todas las entradas del dia de hoy del visitante*/
-int recorrerEntradas (struct NodoEntradas *headEntradas) {
-    struct NodoEntradas *rec;
+int recorrerEntradas (struct NodoEntrada *headEntradas) {
+    struct NodoEntrada *rec;
     int recaudado = 0;
     struct Entrada *enUso;
 
@@ -548,9 +548,9 @@ int VisitantesDelDia (struct NodoVisitante *headVisitantes) {
 
 /*struct auxiliiar para almacenar la atraccion y la fila mas larga registrada dentro de esa atraccion*/
 struct ReporteFilas {
-    struct atraccion *datos;
+    struct Atraccion *datos;
     int tamFila;
-}
+};
 /* se usa en el malloc, cuenta las atracciones de una zona*/
 int contarAtracciones (struct NodoAtraccion *headAtraccion) {
     int contador = 0;
@@ -578,7 +578,7 @@ int TotalAtracciones (struct Zona **Zonas,int plibre) {
 }
 /*rellena el arreglo dinamico con las atracciones de la zona dada y a la vez el contador de posicion*/
 void CopiarAtracciones (struct ReporteFilas **repFilas, struct Zona *ZonaActual, int * pos) {
-    struct NodoAtracciones *rec;
+    struct NodoAtraccion *rec;
 
     struct Atraccion *atraccionActual;
 
@@ -656,7 +656,7 @@ void MostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struc
     cantAtracciones = TotalAtracciones(IBCLandia->zonas,IBCLandia->pLibreZonas);
 
 
-    printf("NOMBRE -> TAMAÑO FILA");
+    printf("NOMBRE -> TAMAÑO FILA\n");
     /*recorre hasta que muestre todas las atracciones y su tamFila, todas estan ordenadas*/
     for (i = 0; i < cantAtracciones; i++) {
         if (reporte[i] != NULL) {
