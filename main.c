@@ -12,6 +12,8 @@
 char fechaActual[10];
 int recaudacionEntradas[4]; /*En cada elemento del array se guarda la recaudacion en su respectivo estado
 Ej: un visitante compra una entrada general, entonces se realiza recaudacionEntradas[entrada->tipo] += entrada->valor*/
+int valorEntradas[4] = {22990,10990,0,44990}; /*En cada elemento del array se guarda el valor de la entrada con su respectivo tipo
+Ej: para escribir el valor de una entrada en una funcion se usaria: entrada->valor = valorEntradas[tipo]*/
 
 struct Entrada{
     int idEntrada;
@@ -98,6 +100,10 @@ char *pasarAMinus(char *cadena) {
     return NuevaCadena;
 }
 
+
+/*Busca a un visitante dentro del arbol por su ID
+ * Utiliza recursividad
+ */
 struct Visitante *buscarVisitantePorID(struct NodoVisitante *raiz, int idVisitanteBuscar) {
     if (raiz == NULL) return NULL;
     if (raiz->datos->idVisitante==idVisitanteBuscar) {
@@ -110,6 +116,26 @@ struct Visitante *buscarVisitantePorID(struct NodoVisitante *raiz, int idVisitan
     }
 }
 
+/*Funcion que recorre el arbol de visitantes recursivamente para encontrar visitante por rut*/
+struct Visitante *buscarVisitantePorRut(struct NodoVisitante *raiz, char *rut) {
+    struct Visitante *visitanteBuscar;
+
+    if (raiz == NULL) return NULL;
+    visitanteBuscar = raiz->datos;
+
+    if (strcmp(visitanteBuscar->rut,rut) == 0) return visitanteBuscar;
+
+    visitanteBuscar = buscarVisitantePorRut(raiz->izq,rut);
+    if (visitanteBuscar != NULL) return visitanteBuscar;
+    visitanteBuscar = buscarVisitantePorRut(raiz->der,rut);
+    if (visitanteBuscar != NULL) return visitanteBuscar;
+    return NULL;
+}
+
+/*Funcion para crear un id para un visitante nuevo.
+ * Esta función tiene en cuenta que el id del visitante tiene que ser unico
+ * todo: falta agregarle un caso especial en el que estén todas las ids usadas
+ */
 int crearIdNuevoVisitante(struct NodoVisitante *raiz) {
     int idNuevo = 0, esUnica = 0;
     if (raiz==NULL) return 50000;
@@ -122,6 +148,10 @@ int crearIdNuevoVisitante(struct NodoVisitante *raiz) {
     return idNuevo;
 }
 
+
+/*Funcion que crea el struct de un visitante, inicializa datos y pide al usuario algunos.
+ * La funcion asume que antes de ser llamada se limpia el buffer de entrada para no generar problemas
+ */
 struct Visitante *crearVisitante(struct NodoVisitante *raiz) {
     int idVisitanteNuevo;
     struct Visitante *visitanteNuevo = malloc(sizeof(struct Visitante));
@@ -129,16 +159,19 @@ struct Visitante *crearVisitante(struct NodoVisitante *raiz) {
     idVisitanteNuevo = crearIdNuevoVisitante(raiz);
     visitanteNuevo ->idVisitante = idVisitanteNuevo;
 
+    /*Se le asigna memoria a los chars, el programa asume que no se ingresará un nombre de más de 50 caracteres*/
     visitanteNuevo->nombre = malloc(sizeof(char)*50);
     visitanteNuevo->rut = malloc(sizeof(char)*12);
 
-
+    /*Se pide el input al usuario de los datos*/
     printf("Ingresar nombre completo del visitante: ");
     fgets(visitanteNuevo->nombre,50, stdin);
 
     printf("Ingresar rut del visitante: ");
     fgets(visitanteNuevo->rut,12, stdin);
 
+
+    /*Inicialización de datos fijos que no requieren input del usuario*/
     visitanteNuevo->boolEstaEnParque = 0;
     visitanteNuevo->zonaActual = NULL;
     visitanteNuevo->headEntradas = NULL;
@@ -146,6 +179,8 @@ struct Visitante *crearVisitante(struct NodoVisitante *raiz) {
     return visitanteNuevo;
 }
 
+
+/*Funcion que busca el nodo al que debería estar conectado el nodo que va a contener un visitante nuevo*/
 struct NodoVisitante *buscarNodoParaVisitanteNuevo(struct NodoVisitante *raiz, int idVisitanteNuevo) {
     struct NodoVisitante *rec;
     if (raiz != NULL) {
@@ -163,18 +198,31 @@ struct NodoVisitante *buscarNodoParaVisitanteNuevo(struct NodoVisitante *raiz, i
     return NULL;
 }
 
-void crearYAgregarNodoVisitante(struct NodoVisitante **raiz) {
+
+/*Función que crea y anida un nuevo visitante al arbol
+ * Esta función maneja el caso especial en el que el visitante nuevo sea el primero en ser ingresado al arbol
+ */
+void crearYAgregarVisitanteAArbol(struct NodoVisitante **raiz) {
     struct NodoVisitante *nodoNuevo, *nodoAnterior;
+    /*Se asigna memoria para el nodo nuevo y se le entrega los datos del visitante*/
     nodoNuevo = malloc(sizeof(struct NodoVisitante));
     nodoNuevo->datos=crearVisitante(*raiz);
+
     nodoNuevo->izq = NULL;
     nodoNuevo->der = NULL;
+
     nodoAnterior = buscarNodoParaVisitanteNuevo(*raiz,nodoNuevo->datos->idVisitante);
+
+    /*Estas lineas se encargan de asignar a que lado del nodo anterior va conectado el nuevo.
+     * En el caso de que no haya nodo anterior se asume que el arbol esta vacio y se deja el nodo recien creado
+     * como raiz
+     */
     if (nodoAnterior == NULL) *raiz = nodoNuevo;
     else if (nodoAnterior->datos->idVisitante<nodoNuevo->datos->idVisitante) nodoAnterior->der = nodoNuevo;
     else nodoAnterior->izq = nodoNuevo;
 }
 
+/*Funcion recursiva que cuenta la cantidad de visitantes en el parque al momento de ejecutarse*/
 int contarVisitantesEnParque(struct NodoVisitante *raiz) {
     int cont = 0;
 
@@ -187,34 +235,98 @@ int contarVisitantesEnParque(struct NodoVisitante *raiz) {
     return cont + raiz->datos->boolEstaEnParque;
 }
 
+/*Esta función recorre la lista simplemente enlazada del visitante y retorna puntero a la entrada si se encontró por id
+ * o retorna NULL si no se encontró
+ */
 struct Entrada *buscarEntradaPorIdEnVisitante(struct NodoEntrada *head, int idEntrada) {
     struct NodoEntrada *rec;
     if (head != NULL) {
         rec = head ->sig;
         while (rec!=NULL) {
             if (rec->datos->idEntrada == idEntrada) return rec->datos;
-            rec->sig;
+            rec = rec->sig;
         }
     }
     return NULL;
 }
 
+/*Esta funcion recorre el arbol de visitantes y para cada visitante recorre su lista para encontrar la entrada
+ * solicitada por id. En caso de no ser encontrada retorna NULL.
+ */
 struct Entrada *buscarEntradaPorId(struct NodoVisitante *raiz, int idEntrada) {
-    struct NodoVisitante *rec;
     struct Entrada *entradaBuscar;
-    if (raiz!=NULL) {
-        rec=raiz;
-        while (rec!=NULL) {
-            entradaBuscar = buscarEntradaPorIdEnVisitante(rec->datos->headEntradas,idEntrada);
-            if (entradaBuscar != NULL) return entradaBuscar;
-            else if ()
-        }
+    if (raiz == NULL) {
+        return NULL;
     }
+    entradaBuscar = buscarEntradaPorIdEnVisitante(raiz->datos->headEntradas,idEntrada);
+    if (entradaBuscar != NULL) {
+        return entradaBuscar;
+    }
+    entradaBuscar = buscarEntradaPorId(raiz->izq,idEntrada);
+    if (entradaBuscar != NULL) return entradaBuscar;
+    entradaBuscar = buscarEntradaPorId(raiz->der,idEntrada);
+    if (entradaBuscar != NULL) return entradaBuscar;
+    return NULL;
 
 }
 
-struct Entrada *crearEntrada(void) {
-    int idEntradaNueva;
+
+/*Funcion que genera un id para una entrada nueva, teniendo en cuenta de no repetir ninguna
+ * todo: Revisar caso especial en el que esten todos los ids ocupados
+ */
+int generarIdEntradaNueva(struct NodoVisitante *raiz) {
+    int idNuevo = 0,esUnico = 0;
+    while (esUnico != 1) {
+        idNuevo = rand() % (MAX_ID_VISITANTES + 1);
+        if (buscarEntradaPorId(raiz,idNuevo) == NULL)  esUnico = 1;
+    }
+    return idNuevo;
+}
+
+/*Funcion que crea una entrada, recibiendo como uno de sus parametros el tipo de entrada, asi que se tiene que preguntar
+ * al usuario que tipo de entrada se va a asignar antes de ser llamada.
+ */
+struct Entrada *crearEntrada(struct NodoVisitante *raiz, int tipoEntrada) {
+    struct Entrada *entradaNueva = malloc(sizeof(struct Entrada));
+    entradaNueva->idEntrada = generarIdEntradaNueva(raiz);
+    entradaNueva->tipo = tipoEntrada;
+    entradaNueva->estado = 0;
+    entradaNueva->valor = valorEntradas[tipoEntrada];
+    entradaNueva->fechaUsada = fechaActual;
+    return entradaNueva;
+}
+
+/*Funcion que obtiene el ultimo nodo de la lista de entradas de un visitante para despues poder anidar el nodo nuevo
+ * de una entrada recien creada
+ */
+struct NodoEntrada *obtenerNodoAnteriorParaEntradaNueva(struct NodoEntrada *headEntradas) {
+    struct NodoEntrada *rec;
+    if (headEntradas != NULL) {
+        rec = headEntradas->sig;
+        while (rec->sig !=NULL) {
+            rec=rec->sig;
+        }
+        return rec;
+    }
+    return NULL;
+}
+
+
+/*Esta funcion crea y agrega una entrada a la lista del visitante. Se debe tener de antes un puntero al visitante para
+ * poder entregarle el head de su lista de entradas a esta funcion
+ */
+void crearYAgregarEntradaALista(struct NodoVisitante *raiz,struct NodoEntrada *head,int tipoEntrada) {
+    struct NodoEntrada *nodoNuevo,*nodoAnterior;
+    nodoNuevo = malloc(sizeof(struct NodoEntrada));
+    nodoNuevo->datos=crearEntrada(raiz,tipoEntrada);
+    nodoAnterior = obtenerNodoAnteriorParaEntradaNueva(head);
+    if (nodoAnterior==NULL) head->sig = nodoNuevo;
+    else nodoAnterior->sig = nodoNuevo;
+}
+
+/*funcion inutil quizas la borre despues XD*/
+void cambiarEstadoEntrada(struct Entrada *entrada,int estadoNuevo) {
+    entrada->estado = estadoNuevo;
 }
 
 void comprarEntradaVisitante(struct Visitante *visitante) {
@@ -226,13 +338,16 @@ int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
 }
 
 void mostrarMenuVisitantes(void) {
+    int c;
+
+
 
 }
 
 
 
 
-//Retorna un arreglo dinamico de punteros a las atracciones NO OPERATIVAS//
+/*Retorna un arreglo dinamico de punteros a las atracciones NO OPERATIVAS*/
 
 
 
@@ -291,12 +406,12 @@ struct Atraccion ** obtenerArregloAtraccionesNoOperativas (struct Zona ** zonas,
     return ArregloNoOperativas;
 }
 
-void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visitante ** arreglo, int *posicion) {
+void recorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visitante ** arreglo, int *posicion) {
     struct Visitante *datos;
     if (headVisitantes == NULL) return;
     datos = headVisitantes->datos;
 
-    RecorrerArbolAñadiendo(headVisitantes->izq,arreglo,posicion);
+    recorrerArbolAnadiendo(headVisitantes->izq,arreglo,posicion);
 
 
     if (datos->boolEstaEnParque == 1) {
@@ -305,7 +420,7 @@ void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visita
     }
 
 
-    RecorrerArbolAñadiendo(headVisitantes->der,arreglo,posicion);
+    recorrerArbolAnadiendo(headVisitantes->der,arreglo,posicion);
 
 }
 
@@ -322,7 +437,7 @@ struct Visitante **DentroDelParque (struct Parque *IbcLandia) {
 
     VisitantesEnElParque = (struct Visitante **) malloc (contador * sizeof (struct Visitante *));
 
-    RecorrerArbolAñadiendo(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
+    recorrerArbolAnadiendo(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
 
     return VisitantesEnElParque;
 
@@ -415,7 +530,7 @@ int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
 
     actual = headVisitantes->datos;
 
-    contador += cantidadDeEntradasDiarias(actual->headEntradas);
+    contador += cantidadDeEntradasDiaria(actual->headEntradas);
 
     contador += cantidadDeEntradasEnArbol(headVisitantes->izq);
     contador += cantidadDeEntradasEnArbol(headVisitantes->der);
