@@ -35,6 +35,7 @@ struct Visitante{
     int boolEstaEnParque; /*0-> No esta en parque, 1 -> Si esta en parque*/
     char *rut;
     char *nombre;
+    float altura; /*altura en metros*/
     struct NodoEntrada *headEntradas; /*head lista entradas de cada visitante*/
     struct Zona *zonaActual;
 };
@@ -329,8 +330,41 @@ void cambiarEstadoEntrada(struct Entrada *entrada,int estadoNuevo) {
     entrada->estado = estadoNuevo;
 }
 
-void comprarEntradaVisitante(struct Visitante *visitante) {
-    printf("Ingrese entrada que desea comprar");
+/*funcion que compra entrada y la añade a la lista de entradas del visitante
+ * La función asume que el buffer de entrada se limpió antes de ser llamada
+ */
+void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visitante) {
+    int tipoEntradaComprar = 0,opcionValida = 0,opcionDuenoCompra;
+    struct Visitante *visitanteReceptorEntrada;
+    printf("Tipos de entrada: \n");
+    printf("0.- Entrada general. \n");
+    printf("1.- Pase infantil. \n");
+    printf("2.- Entrada familiar. \n");
+    printf("3.- Entrada VIP. \n");
+    do {
+        printf("\n");
+        printf("Ingrese el tipo de entrada que el visitante desea comprar: ");
+        scanf("%d",&tipoEntradaComprar);
+        if (tipoEntradaComprar >= 0 && tipoEntradaComprar <= 3) opcionValida = 1;
+    }while (opcionValida!=1);
+    opcionValida = 0;
+
+    printf("\n");
+    printf("¿La entrada es para quien hace la compra o para otro visitante? \n");
+    printf("1.- Visitante que realiza la compra. \n");
+    printf("2.- Otro visitante. \n");
+    do {
+        printf("Ingrese opcion deseada: ");
+        scanf("%d", &opcionDuenoCompra);
+        if (opcionDuenoCompra>0 && opcionDuenoCompra<3) opcionValida = 1;
+    }while (opcionValida!=1);
+
+    if (opcionDuenoCompra==1) {
+        visitanteReceptorEntrada = visitante;
+    }
+
+    crearYAgregarEntradaALista(raiz,visitante->headEntradas,tipoEntradaComprar);
+
 }
 
 int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
