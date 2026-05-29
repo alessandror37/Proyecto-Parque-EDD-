@@ -141,7 +141,7 @@ int crearIdNuevoVisitante(struct NodoVisitante *raiz) {
     int idNuevo = 0, esUnica = 0;
     if (raiz==NULL) return 50000;
     while (esUnica != 1) {
-        idNuevo = rand() % (MAX_ID_VISITANTES + 1);
+        idNuevo = (rand() % MAX_ID_VISITANTES) + 1; /*rango de los ids: 1-100000*/
         if (buscarVisitantePorID(raiz, idNuevo) == NULL) {
             esUnica = 1;
         }
@@ -175,7 +175,8 @@ struct Visitante *crearVisitante(struct NodoVisitante *raiz) {
     /*Inicialización de datos fijos que no requieren input del usuario*/
     visitanteNuevo->boolEstaEnParque = 0;
     visitanteNuevo->zonaActual = NULL;
-    visitanteNuevo->headEntradas = NULL;
+    visitanteNuevo->headEntradas = malloc(sizeof(struct NodoEntrada));
+    visitanteNuevo->headEntradas->sig = NULL;
 
     return visitanteNuevo;
 }
@@ -312,7 +313,6 @@ struct NodoEntrada *obtenerNodoAnteriorParaEntradaNueva(struct NodoEntrada *head
     return NULL;
 }
 
-
 /*Esta funcion crea y agrega una entrada a la lista del visitante. Se debe tener de antes un puntero al visitante para
  * poder entregarle el head de su lista de entradas a esta funcion
  */
@@ -334,7 +334,7 @@ void cambiarEstadoEntrada(struct Entrada *entrada,int estadoNuevo) {
  * La función asume que el buffer de entrada se limpió antes de ser llamada
  */
 void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visitante) {
-    int tipoEntradaComprar = 0,opcionValida = 0,opcionDuenoCompra;
+    int tipoEntradaComprar = 0,opcionValida = 0,opcionDuenoCompra,idVisitanteReceptor;
     struct Visitante *visitanteReceptorEntrada;
     printf("Tipos de entrada: \n");
     printf("0.- Entrada general. \n");
@@ -346,6 +346,10 @@ void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visita
         printf("Ingrese el tipo de entrada que el visitante desea comprar: ");
         scanf("%d",&tipoEntradaComprar);
         if (tipoEntradaComprar >= 0 && tipoEntradaComprar <= 3) opcionValida = 1;
+        else {
+            printf("\n");
+            printf("Ingrese una opcion valida.");
+        }
     }while (opcionValida!=1);
     opcionValida = 0;
 
@@ -354,20 +358,42 @@ void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visita
     printf("1.- Visitante que realiza la compra. \n");
     printf("2.- Otro visitante. \n");
     do {
+        printf("\n");
         printf("Ingrese opcion deseada: ");
         scanf("%d", &opcionDuenoCompra);
         if (opcionDuenoCompra>0 && opcionDuenoCompra<3) opcionValida = 1;
+        else {
+            printf("\n");
+            printf("Ingrese una opcion valida.");
+        }
     }while (opcionValida!=1);
 
     if (opcionDuenoCompra==1) {
         visitanteReceptorEntrada = visitante;
+    }else {
+        do {
+            opcionValida = 0;
+            printf("\n");
+            printf("Ingrese id del visitante al que se le asignara la entrada: ");
+            scanf("%d",&idVisitanteReceptor);
+            visitanteReceptorEntrada = buscarVisitantePorID(raiz,idVisitanteReceptor);
+            if (visitanteReceptorEntrada != NULL) opcionValida = 1;
+            else {
+                printf("\n");
+                printf("ERROR: No se encontro un visitante con el id %d , intentelo de nuevo.",idVisitanteReceptor);
+            }
+        }while (opcionValida!= 1);
     }
 
-    crearYAgregarEntradaALista(raiz,visitante->headEntradas,tipoEntradaComprar);
+    crearYAgregarEntradaALista(raiz,visitanteReceptorEntrada->headEntradas,tipoEntradaComprar);
 
 }
 
+/*Funcion que valida la entrada del visitante.
+ * esta funcion no tendra interaccion con el usuario
+ */
 int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
+    int resultadoFuncion;
 
 }
 
@@ -548,7 +574,7 @@ int cantidadDeEntradasDiaria (struct NodoEntrada *nodoEntrada) {
     if (nodoEntrada->sig == NULL) return 0;
     rec = nodoEntrada->sig;
     while (rec != NULL) {
-        if (rec->datos->estado == 0 && strcmp(rec->datos->fecha, fechaActual) == 0) {
+        if (rec->datos->estado == 0 && strcmp(rec->datos->fechaUsada, fechaActual) == 0) {
             contador++;
         }
         rec = rec->sig;
