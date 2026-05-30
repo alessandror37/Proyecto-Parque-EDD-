@@ -1224,7 +1224,7 @@ struct Visitante *buscarVisitantePorRutOPorID(struct NodoVisitante *raiz){
     char *input = (char *)malloc(13 * sizeof(char));
     int i, esRut = 0;
 
-    printf("INGRESE RUT O ID\n");
+    printf("INGRESE RUT (FORMATO 12.345.678-9) O ID\n");
     scanf("%s", input);
 
     for(i = 0; input[i] != '\0'; i++){
