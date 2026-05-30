@@ -21,6 +21,8 @@ struct Entrada{
     int valor;
     int estado; /*0-> activa, 1-> utilizada, 2->anulada, 3-> vencida  */
     char *fechaUsada;
+    int usosFamiliar[2]; /*arreglo que se usa para manejar las entradas familiares, la posicion 0 maneja los adultos y
+    la posicion 1 maneja los menores*/
 };
 
 /*Lista simplemente enlazada con nodo fantasma*/
@@ -35,7 +37,8 @@ struct Visitante{
     int boolEstaEnParque; /*0-> No esta en parque, 1 -> Si esta en parque*/
     char *rut;
     char *nombre;
-    float altura; /*altura en metros*/
+    float altura; /*altura en metros. La entrada general es valida solo para personas de 1,4 metros, mientras que el
+    pase infantil es solo valido para personas menores de 1,4 metros*/
     struct NodoEntrada *headEntradas; /*head lista entradas de cada visitante*/
     struct Zona *zonaActual;
 };
@@ -254,7 +257,7 @@ struct Entrada *buscarEntradaPorIdEnVisitante(struct NodoEntrada *head, int idEn
 }
 
 /*Esta funcion recorre el arbol de visitantes y para cada visitante recorre su lista para encontrar la entrada
- * solicitada por id. En caso de no ser encontrada retorna NULL.
+ * solicitada por ID. En caso de no ser encontrada retorna NULL.
  */
 struct Entrada *buscarEntradaPorId(struct NodoVisitante *raiz, int idEntrada) {
     struct Entrada *entradaBuscar;
@@ -296,6 +299,15 @@ struct Entrada *crearEntrada(struct NodoVisitante *raiz, int tipoEntrada) {
     entradaNueva->estado = 0;
     entradaNueva->valor = valorEntradas[tipoEntrada];
     entradaNueva->fechaUsada = fechaActual;
+    if (tipoEntrada == 3){
+        entradaNueva->usosFamiliar[0] = 2;
+        entradaNueva->usosFamiliar[1] = 2;
+    }
+    else {
+        entradaNueva->usosFamiliar[0] = 0;
+        entradaNueva->usosFamiliar[1] = 0;
+    }
+
     return entradaNueva;
 }
 
@@ -392,10 +404,57 @@ void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visita
 
 /*Funcion que valida la entrada del visitante.
  * esta funcion no tendra interaccion con el usuario
- */
+ * retorna un valor dependiendo del exito/error de la operacion
+ * 0 -> No existe id con esa entrada
+ * 1 -> operacion realizada con exito/entrada validada, permitir paso al visitante
+ * 2 -> La altura del visitante no coincide con el tipo de entrada que se esta intentando usar
+ * 3 -> Maximo de usos adultos en entrada familiar alcanzada
+ * 4 -> Maximo de usos infantil en entrada familiar alcanzada
+ * 5-> Entrada no valida (porque ya fue utilizada, esta vencida o fue anulada)
+ *
+ * NOTA: La funcion que llame a esta deberia encargarse de hacer el check de que la entrada familiar haya sido completamente
+ * utilizada, para actualizar su estado
+*/
 int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
-    int resultadoFuncion;
+    float alturaVisitante = visitante->altura;
+    struct Entrada *entradaVisitante = buscarEntradaPorIdEnVisitante(visitante->headEntradas,idEntrada);
+    if (entradaVisitante == NULL) return 0;
+    switch (entradaVisitante->estado) {
+        case 0:
+            if (entradaVisitante->tipo == 0 || entradaVisitante->tipo == 3) {
+                if (alturaVisitante>=1.4) {
+                    entradaVisitante->estado = 1;
+                    return 1;
+                }
+                return 2;
+            }
+            if (entradaVisitante->tipo == 1) {
+                if (alturaVisitante<1.4) {
+                    entradaVisitante->estado = 1;
+                    return 1;
+                }
+                return 2;
+            }
+            if (entradaVisitante->tipo == 2) {
+                if (alturaVisitante>=1.4) {
+                    if (entradaVisitante->usosFamiliar[0]>0) {
+                        entradaVisitante->usosFamiliar[0]--;
+                        return 1;
+                    }
+                    return 3;
+                }
 
+                if (entradaVisitante->usosFamiliar[1]>0) {
+                    entradaVisitante->usosFamiliar[1]--;
+                    return 1;
+                }
+                return 4;
+
+            }
+            break;
+        default:
+            return 5;
+    }
 }
 
 void mostrarMenuVisitantes(void) {
@@ -449,7 +508,7 @@ struct Atraccion ** NoOperativas (struct Zona ** zonas, int plibre) {
     int posicion = 0;
     struct NodoAtraccion *rec = NULL;
 
-    cantidadNoOperativas = contarAtraccionesNoOperativas (zonas, plibre);
+    cantidadNoOperativas = contarNoOperativas (zonas, plibre);
     if (cantidadNoOperativas == 0) return NULL;
 
     ArregloNoOperativas = (struct Atraccion **) malloc(cantidadNoOperativas * sizeof (struct Atraccion *));
@@ -880,7 +939,7 @@ void OrdenarAtracciones(struct ReporteFilas **reporte,int tam) {
     }
 }
 /*crea el arreglo dinamico de atraccionees ordenado de mayor a menor*/
-struct ReporteFilas ** ArregloAtracciones (struct parque *IBCLandia) {
+struct ReporteFilas ** ArregloAtracciones (struct Parque *IBCLandia) {
     struct ReporteFilas **TodasLasAtracciones;
     int tam;
     int pos = 0;
