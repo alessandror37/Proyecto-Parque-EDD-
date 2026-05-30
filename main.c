@@ -30,6 +30,7 @@ struct Visitante{
     int idVisitante; /*Al ser manejados con árboles, vamos a tener que investigar sobre como manejar los ids para
     obtener un arbol binario*/
     int boolEstaEnParque; /*0-> No esta en parque, 1 -> Si esta en parque*/
+    int edad;
     char *rut;
     char *nombre;
     float altura;
@@ -51,16 +52,17 @@ struct NodoFila{
 
 struct Atraccion{
     char *nombre;
-    int estado; /*0 -> Operativa, 1 -> En mantenimiento, 2 -> Fuera de servicio, 3 -> Cerrada por horario */
+    int estado; /* 0 -> Operativa, 1 -> En mantenimiento, 2 -> Fuera de servicio, 3 -> Cerrada por horario */
     int capacidad;
-    struct Visitante visitantesEnAtraccion[CAPACIDAD_MAX]; /*La capacidad real de la atracción es la misma que se
-    encuentra dentro del struct y es la que se va a tomar en cuenta para la lógica de las funciones*/
+    struct Visitante visitantesEnAtraccion[CAPACIDAD_MAX]; /* La capacidad real de la atracción es la misma que se
+    encuentra dentro del struct y es la que se va a tomar en cuenta para la lógica de las funciones */
     int duracion; /*duración en minutos*/
     float alturaMinima;/*altura en metros*/
     int edadMinima;
     struct NodoFila *headFila; /*head a la lista de la fila de la atracción*/
     int visitantesTotales;
     int mayorFilaRegistrada;
+    struct Visitante **registroVisitantes;
 };
 
 /*Lista doblemente enlazada con nodo fantasma*/
@@ -481,7 +483,7 @@ struct Visitante **DentroDelParque (struct Parque *IbcLandia) {
 
 // atraccion con mas visitantes en espera //
 /*cuenta las personas dentro de cada fila en una atracción*/
-int cantidadEnFila (struct  NodoFila *fila) {
+int cantidadEnFila(struct NodoFila *fila) {
     int contador = 0;
     struct NodoFila *rec;
     if (fila->sig == NULL) return 0;
@@ -1090,7 +1092,7 @@ void verificarYAsignarPersonal(struct Zona **zonas, int pLibreZonas, int idZona)
             zonaConMenosVisitantes -> personalEncargado -= 5;
         }
     }else{
-        /* si la zona no está sobre el 90% de ocupacion pero tiene personal de mas, este personal se mueve a la zona con menos personal en ese momento */
+        /* si la zona no está sobre el 90% de ocupacion, pero tiene personal de mas, este personal se mueve a la zona con menos personal en ese momento */
         if(zonaARevisar -> personalEncargado > 30){
             printf("LA ZONA ACTUAL TIENE UN EXCESO DE PERSONAL, SE ENVIARA PARTE DE SU PERSONAL A OTRA ZONA");
             zonaARevisar -> personalEncargado -= 5;
@@ -1129,13 +1131,14 @@ int ordenarZonasPorTiempoDeEspera(const void *a, const void *b){
 }
 
 void recomendarZonas(struct Zona **zonas, int pLibreZonas){
-    struct Zona **zonasEnOrden = (struct Zona **)malloc(pLibreZonas * sizeof(struct Zona *));
+    struct Zona **zonasEnOrden;
     int i, limite;
+    zonasEnOrden = (struct Zona **)malloc(pLibreZonas * sizeof(struct Zona *));
 
     memcpy(zonasEnOrden, zonas, pLibreZonas * sizeof(struct Zona *));
     qsort(zonasEnOrden, (size_t)pLibreZonas, sizeof(struct Zona *), ordenarZonasPorTiempoDeEspera);
 
-    printf("LA ZONA ACTUAL TIENE UN TIEMPO DE ESPERA MUY ALTO\n");
+    printf("LA ZONA ACTUAL TIENE TIEMPOS DE ESPERA EN FILA MUY ALTO (50+ min)\n");
     printf("recomendación de zonas con menos tiempos de espera:\n");
 
     if(pLibreZonas >= 3) {
@@ -1147,6 +1150,7 @@ void recomendarZonas(struct Zona **zonas, int pLibreZonas){
     for(i = 0; i < limite; i++){
         printf("%s \n", zonasEnOrden[i] -> nombre);
     }
+    free(zonasEnOrden);
 }
 
 void menuVisitantesEnZona(struct Zona **zonas, int pLibreZonas){
@@ -1173,6 +1177,206 @@ void menuVisitantesEnZona(struct Zona **zonas, int pLibreZonas){
     }else if(opcion == 2){
         consultarZonaConMasVisitantes(zonas, pLibreZonas);
     }
+}
+
+struct Atraccion *seleccionDeAtraccion(struct NodoAtraccion *headAtracciones){
+    struct NodoAtraccion *rec = headAtracciones -> sig;
+    struct Atraccion *atraccionElegida;
+    int seleccion, i = 1, contador = 0;
+
+    printf("SELECCIONE UNA ATRACCION\n");
+    do{
+        if(rec -> datos -> estado == 0){
+            printf("%d: %s \n", i, rec -> datos -> nombre);
+            i++;
+            contador++;
+        }
+        rec = rec -> sig;
+    }while(rec != NULL);
+
+    if(contador == 0){
+        printf("No hay atracciones operativas");
+        return NULL;
+    }
+    scanf("%d", &seleccion);
+
+    while(seleccion < 1 || seleccion > i - 1){
+        printf("INGRESE UNA OPCION VALIDA\n");
+        scanf("%d", &seleccion);
+    }
+
+    i = 1;
+    rec = headAtracciones -> sig;
+    do{
+        if(rec -> datos -> estado == 0){
+            atraccionElegida = rec -> datos;
+            if(i == seleccion) return atraccionElegida;
+            i++;
+        }
+        rec = rec -> sig;
+    }while(rec != NULL);
+
+    return NULL;
+}
+
+struct Visitante *buscarVisitantePorRutOPorID(struct NodoVisitante *raiz){
+    struct Visitante *visitante = NULL;
+    char *input = (char *)malloc(13 * sizeof(char));
+    int i, esRut = 0;
+
+    printf("INGRESE RUT O ID\n");
+    scanf("%s", input);
+
+    for(i = 0; input[i] != '\0'; i++){
+        if(input[i] == '-' || input[i] == '.'){
+            esRut = 1;
+            break;
+        }
+    }
+
+    if(esRut == 1){
+        visitante = buscarVisitantePorRut(raiz, input);
+    }else{
+        visitante = buscarVisitantePorID(raiz, atoi(input));
+    }
+    free(input);
+    return visitante;
+}
+
+void agregarVisitanteARegistroAtraccion(struct Visitante *visitante, struct Atraccion *atraccion){
+    int i, estaEnRegistro = 0;
+    struct Visitante **arregloTemp;
+
+    /* si el registro está vacio le asigna memoria al arreglo y agrega la primera persona*/
+    if(atraccion -> visitantesTotales == 0){
+        atraccion -> registroVisitantes = (struct Visitante **)malloc(1*sizeof(struct Visitante*));
+        atraccion -> registroVisitantes[0] = visitante;
+        atraccion -> visitantesTotales = 1;
+    }else{
+        /* revisa si la persona no está en el registro para agregarla y aumentar el contador */
+        for(i = 0; i < atraccion -> visitantesTotales; i++){
+            if(atraccion -> registroVisitantes[i] == visitante){
+                estaEnRegistro = 1;
+            }
+        }
+        /* realloc agranda el arreglo de 1 en 1 y luego se agrega la persona */
+        if(estaEnRegistro == 0){
+            atraccion -> visitantesTotales++;
+            arregloTemp = realloc(atraccion -> registroVisitantes,sizeof(struct Visitante *)* atraccion -> visitantesTotales);
+            if(arregloTemp != NULL){
+                atraccion -> registroVisitantes = arregloTemp;
+                atraccion -> registroVisitantes[atraccion -> visitantesTotales - 1] = visitante;
+            }else{
+                printf("ERROR AL AGRANDAR EL REGISTRO DE VISITANTES\n");
+                printf("La persona con id %d debe ser agregada al registro", visitante -> idVisitante);
+            }
+        }
+    }
+}
+
+void opcionAgregarVisitanteAFila(struct NodoVisitante *raiz){
+    /* declaracion de variables */
+    struct Visitante *visitante;
+    struct Atraccion *atraccion;
+    struct NodoFila *rec;
+    struct Zona *zona;
+    struct NodoFila *nuevoNodo;
+    int personasEnFila;
+
+    /* busqueda del visitante en el sistema, se selecciona automaticamente su zona actual */
+    visitante = buscarVisitantePorRutOPorID(raiz);
+    if(visitante == NULL){
+        do{
+            printf("RUT/ID INVALIDO\n");
+            visitante = buscarVisitantePorRutOPorID(raiz);
+        }while(visitante == NULL);
+    }
+    zona = visitante -> zonaActual;
+
+    /* seleccion de la atraccion a unirse */
+    atraccion = seleccionDeAtraccion(zona -> headAtracciones);
+    if(atraccion == NULL){
+        return;
+    }
+    if(visitante -> altura < atraccion -> alturaMinima || visitante -> edad < atraccion -> edadMinima){
+        printf("Ups! el visitante no cumple con la edad y/o altura necesaria para subir a la atraccion :( \n");
+        return;
+    }
+
+    /* reserva de memoria y asignacion de valores para el nuevo NodoFila */
+    nuevoNodo = (struct NodoFila *)malloc(sizeof(struct NodoFila));
+    nuevoNodo -> sig = atraccion -> headFila;
+    nuevoNodo -> datos = visitante;
+
+    /* agregado a la fila */
+    rec = atraccion -> headFila;
+    if(rec -> sig == rec) {
+        rec -> sig = nuevoNodo;
+    }else{
+        do{
+            rec = rec -> sig;
+        }while(rec -> sig != atraccion -> headFila);
+        rec -> sig = nuevoNodo;
+    }
+
+    /* actualiza el contador de maxFila, el contador de visitantes totales y el registro de personas que visitaron la atracción*/
+    personasEnFila = cantidadEnFila(atraccion -> headFila);
+    if(personasEnFila > atraccion -> mayorFilaRegistrada){
+        atraccion -> mayorFilaRegistrada = personasEnFila;
+    }
+    agregarVisitanteARegistroAtraccion(visitante, atraccion);
+}
+
+void comprobacionesYUpdatesEnCambioDeZona(struct Zona *zonaAnterior, struct Zona *zonaAViajar, struct Zona **zonas, int pLibreZonas){
+    int tiempoEsperaMedio, ocupacionActual, maxOcupacion;
+
+    /* actualizacion de la cantidad de personas en las zonas */
+    if(zonaAnterior != NULL){
+        (zonaAnterior -> ocupacionActual)--;
+    }
+    (zonaAViajar -> ocupacionActual)++;
+
+
+    /* calcula el tiempo de espera medio en la zona y en caso de ser muy alto (mayor a 50 min) recomienda zonas con mejores tiempos de espera */
+    tiempoEsperaMedio = calcularTiempoEsperaMedio(zonaAViajar);
+    if(tiempoEsperaMedio >= 50) {
+        recomendarZonas(zonas, pLibreZonas);
+    }
+
+    /* Verifica si la zona está muy llena y asigna personal automaticamente si es el caso */
+    verificarYAsignarPersonal(zonas, pLibreZonas, zonaAViajar -> codigo);
+
+    /* actualiza el contador de ocupacion historica (maxima ocupacion que ha tenido la zona en el dia) */
+    ocupacionActual = zonaAViajar -> ocupacionActual;
+    maxOcupacion = zonaAViajar -> ocupacionHistorica;
+    if(ocupacionActual > maxOcupacion){
+        zonaAViajar -> ocupacionHistorica = ocupacionActual;
+    }
+}
+
+void moverVisitanteEntreZonas(struct Zona **zonas, int pLibreZonas, struct NodoVisitante *raiz){
+    struct Visitante *visitante;
+    struct Zona *zonaAnterior;
+    struct Zona *zonaAViajar;
+    int zona;
+
+    /* busqueda de visitante y seleccion de zona a transferir */
+    visitante = buscarVisitantePorRutOPorID(raiz);
+    if(visitante == NULL){
+        do{
+            printf("RUT/ID INVALIDO\n");
+            visitante = buscarVisitantePorRutOPorID(raiz);
+        }while(visitante == NULL);
+    }
+    zona = seleccionDeZona(zonas, pLibreZonas);
+
+    /* actualizacion de contadores de la zona anterior y la zona actual */
+    zonaAViajar = zonas[zona];
+    zonaAnterior = visitante -> zonaActual;
+    comprobacionesYUpdatesEnCambioDeZona(zonaAnterior, zonaAViajar, zonas, pLibreZonas);
+
+    /* se cambia la zona actual del visitante */
+    visitante -> zonaActual = zonaAViajar;
 }
 
 int main(void) {
