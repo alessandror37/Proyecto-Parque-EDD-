@@ -59,7 +59,7 @@ struct Atraccion{
     char *nombre;
     int estado; /*0 -> Operativa, 1 -> En mantenimiento, 2 -> Fuera de servicio, 3 -> Cerrada por horario */
     int capacidad;
-    struct Visitante visitantesEnAtraccion[CAPACIDAD_MAX]; /*La capacidad real de la atracción es la misma que se
+    struct Visitante *visitantesEnAtraccion[CAPACIDAD_MAX]; /*La capacidad real de la atracción es la misma que se
     encuentra dentro del struct y es la que se va a tomar en cuenta para la lógica de las funciones*/
     int duracion; /*duración en minutos*/
     float alturaMinima;/*altura en metros*/
@@ -109,6 +109,18 @@ char *pasarAMinus(char *cadena) {
 }
 
 
+struct Zona *buscarZonaPorCodigo(struct Zona **zonas, int pLibre, int codigoBuscar) {
+    int i;
+
+    for (i = 0; i < pLibre; i++) {
+        if (zonas[i]->codigo == codigoBuscar) {
+            return zonas[i];
+        }
+    }
+    return NULL;
+
+}
+
 /*Busca a un visitante dentro del arbol por su ID
  * Utiliza recursividad
  */
@@ -134,6 +146,16 @@ struct NodoVisitante *buscarNodoVisitantePorID(struct NodoVisitante *raiz, int i
     } else {
         return buscarNodoVisitantePorID(raiz->izq, idVisitanteBuscar);
     }
+}
+
+struct NodoVisitante *buscarNodoVisitanteSucesorPorId(struct NodoVisitante *raiz, int idVisitante) {
+    struct NodoVisitante *rec = raiz;
+    if (raiz == NULL) return NULL;
+    rec = rec->der;
+    while (rec!=NULL && rec->izq != NULL) {
+        rec = rec->izq;
+    }
+    return rec;
 }
 
 /*Funcion que recorre el arbol de visitantes recursivamente para encontrar visitante por rut*/
@@ -241,14 +263,117 @@ void crearYAgregarVisitanteAArbol(struct NodoVisitante **raiz) {
     if (nodoAnterior == NULL) *raiz = nodoNuevo;
     else if (nodoAnterior->datos->idVisitante<nodoNuevo->datos->idVisitante) nodoAnterior->der = nodoNuevo;
     else nodoAnterior->izq = nodoNuevo;
+    printf("\n");
+    printf("Visitante ingresado en el sistema con exite, id del visitante creado: %d",nodoNuevo->datos->idVisitante);
 }
 
-void eliminarVisitantedeArbol(struct NodoVisitante **raiz, int idVisitanteEliminar) {
+void eliminarVisitanteDeArbolNoPrints(struct NodoVisitante **raiz, int idVisitanteEliminar) {
+    int flagIzq = 0,flagRaiz = 0;
     struct Visitante *visitanteEliminar;
-    struct NodoVisitante *nodoAnterior, *nodoEliminar;
+    struct NodoVisitante *nodoAnterior, *nodoEliminar, *nodoSucesor,*nodoHijo = NULL;
+    if (*raiz == NULL) {
+        return;
+    }
+    visitanteEliminar = buscarVisitantePorID(*raiz,idVisitanteEliminar);
+    if (visitanteEliminar == NULL) {
+        return;
+    }
+    nodoEliminar = buscarNodoVisitantePorID(*raiz,idVisitanteEliminar);
+    nodoAnterior = buscarNodoParaVisitanteNuevo(*raiz,idVisitanteEliminar);
+    if (nodoAnterior == NULL) flagRaiz = 1;
+    if (flagRaiz == 0) {
+        if (nodoAnterior->datos->idVisitante > idVisitanteEliminar) flagIzq = 1;
+    }
+    if (nodoEliminar->izq == NULL && nodoEliminar->der == NULL) {
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = NULL;
+            else nodoAnterior->der = NULL;
+        }else *raiz = NULL;
+        free(nodoEliminar);
+        return;
+    }
+    if (nodoEliminar->izq != NULL && nodoEliminar->der == NULL) {
+        nodoHijo = nodoEliminar ->izq;
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = nodoHijo;
+            else nodoAnterior->der = nodoHijo;
+        } else *raiz = nodoHijo;
+        free(nodoEliminar);
+        return;
+    }
+    if (nodoEliminar->der != NULL && nodoEliminar->izq == NULL) {
+        nodoHijo = nodoEliminar->der;
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = nodoHijo;
+            else nodoAnterior->der = nodoHijo;
+        } else *raiz = nodoHijo;
+        free(nodoEliminar);
+        return;
+    }
+    if (nodoEliminar->izq != NULL && nodoEliminar->der != NULL) {
+        nodoSucesor = buscarNodoVisitanteSucesorPorId(*raiz,idVisitanteEliminar);
+        nodoEliminar->datos = nodoSucesor->datos;
+        eliminarVisitanteDeArbolNoPrints(&nodoEliminar->der,nodoSucesor->datos->idVisitante);
+    }
+}
+
+void eliminarVisitanteDeArbol(struct NodoVisitante **raiz, int idVisitanteEliminar) {
+    int flagIzq = 0,flagRaiz = 0;
+    struct Visitante *visitanteEliminar;
+    struct NodoVisitante *nodoAnterior, *nodoEliminar, *nodoSucesor,*nodoHijo = NULL;
     printf("\n");
-    printf("Procesando eliminacion de visitante en el sistema...");
-    printf()
+    printf("Procesando eliminacion de visitante del sistema... \n");
+    if (*raiz == NULL) {
+        printf("ERROR: No existe ningun visitante en el sistema.\n");
+        return;
+    }
+    visitanteEliminar = buscarVisitantePorID(*raiz,idVisitanteEliminar);
+    if (visitanteEliminar == NULL) {
+        printf("ERROR: No existe un visitante con el id \n");
+        return;
+    }
+    nodoEliminar = buscarNodoVisitantePorID(*raiz,idVisitanteEliminar);
+    nodoAnterior = buscarNodoParaVisitanteNuevo(*raiz,idVisitanteEliminar);
+    if (nodoAnterior == NULL) flagRaiz = 1;
+    if (flagRaiz == 0) {
+        if (nodoAnterior->datos->idVisitante > idVisitanteEliminar) flagIzq = 1;
+    }
+    if (nodoEliminar->izq == NULL && nodoEliminar->der == NULL) {
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = NULL;
+            else nodoAnterior->der = NULL;
+        }else *raiz = NULL;
+        free(nodoEliminar);
+        printf("Visitante eliminado del sistema con exito. \n");
+        return;
+    }
+    if (nodoEliminar->izq != NULL && nodoEliminar->der == NULL) {
+        nodoHijo = nodoEliminar ->izq;
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = nodoHijo;
+            else nodoAnterior->der = nodoHijo;
+        } else *raiz = nodoHijo;
+        free(nodoEliminar);
+        printf("Visitante eliminado del sistema con exito. \n");
+        return;
+    }
+    if (nodoEliminar->der != NULL && nodoEliminar->izq == NULL) {
+        nodoHijo = nodoEliminar->der;
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = nodoHijo;
+            else nodoAnterior->der = nodoHijo;
+        } else *raiz = nodoHijo;
+        free(nodoEliminar);
+        printf("Visitante eliminado del sistema con exito. \n");
+        return;
+    }
+    if (nodoEliminar->izq != NULL && nodoEliminar->der != NULL) {
+        nodoSucesor = buscarNodoVisitanteSucesorPorId(*raiz,idVisitanteEliminar);
+        nodoEliminar->datos = nodoSucesor->datos;
+        eliminarVisitanteDeArbolNoPrints(&nodoEliminar->der,nodoSucesor->datos->idVisitante);
+        printf("Visitante eliminado del sistema con exito. \n");
+        return;
+    }
 }
 
 /*Funcion recursiva que cuenta la cantidad de visitantes en el parque al momento de ejecutarse*/
@@ -322,7 +447,7 @@ struct Entrada *crearEntrada(struct NodoVisitante *raiz, int tipoEntrada) {
     entradaNueva->estado = 0;
     entradaNueva->valor = valorEntradas[tipoEntrada];
     entradaNueva->fechaUsada = fechaActual;
-    if (tipoEntrada == 3){
+    if (tipoEntrada == 2){
         entradaNueva->usosFamiliar[0] = 2;
         entradaNueva->usosFamiliar[1] = 2;
     }
@@ -473,6 +598,7 @@ int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
         default:
             return 5;
     }
+    return 6;
 }
 
 void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar) {
@@ -522,11 +648,14 @@ void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar
                     printf("ERROR: La entrada esta vencida. \n");
                     return;
             }
+        case 6:
+            printf("ERROR: No se pudo completar la operacion. \n");
     }
 }
 
 void sacarVisitanteDelParque(struct Parque *IBCLandia,int idVisitanteSalir) {
     struct Visitante *visitanteSalir;
+    struct Zona *ultimaZonavisitante;
     printf("\n");
     printf("Procesando salida del visitante... \n");
     visitanteSalir = buscarVisitantePorID(IBCLandia->headVisitantes, idVisitanteSalir);
@@ -534,7 +663,10 @@ void sacarVisitanteDelParque(struct Parque *IBCLandia,int idVisitanteSalir) {
         printf("ERROR: No existe ningun visitante con el id %d . \n", idVisitanteSalir);
         return;
     }
-    if (visitanteSalir->zonaActual != NULL) visitanteSalir->zonaActual = NULL;
+    if (visitanteSalir->zonaActual != NULL) {
+        visitanteSalir->zonaActual->ocupacionActual--;
+        visitanteSalir->zonaActual = NULL;
+    }
     IBCLandia->ocupacionActual--;
     printf("Salida del visitante registrada con exito.");
 
