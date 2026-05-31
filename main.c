@@ -399,6 +399,75 @@ void eliminarVisitanteDeArbol(struct NodoVisitante **raiz, int idVisitanteElimin
     }
 }
 
+void menuModificarVisitante(struct Zona **zonas,int pLibreZonas,struct Visitante *visitanteModificar) {
+    int opcionModificar,codigoZonaModificar, c;
+    if (visitanteModificar == NULL) {
+        printf("\n");
+        printf("ERROR: No existe el visitante al que se quiere modificar");
+        return;
+    }
+
+    printf("Bienvenido al menu de modificacion de Visitante. \n");
+    printf("1.- Modificar nombre. \n");
+    printf("2.- Modificar altura. \n");
+    printf("3.- Modificar edad. \n");
+    printf("4.- Modificar zona actual. \n");
+    printf("0.- Salir del menu modificar visitante. \n");
+    do {
+        printf("Ingrese una opcion: ");
+        scanf("%d", &opcionModificar);
+        printf("\n");
+        switch (opcionModificar) {
+            case 1:
+                printf("Nombre registrado: %s \n", visitanteModificar->nombre);
+                printf("Ingrese nuevo nombre: ");
+
+                while ((c = getchar()) != '\n' && c != EOF);
+                fgets(visitanteModificar->nombre,50, stdin);
+                printf("\n");
+                printf("Nuevo nombre registrado: %s \n", visitanteModificar->nombre);
+                break;
+            case 2:
+                printf("Altura registrada: %f \n", visitanteModificar->altura);
+                printf("Ingrese nueva altura: ");
+                scanf("%f",&visitanteModificar->altura);
+                printf("\n");
+                printf("Nueva altura registrada: %f \n", visitanteModificar->altura);
+                break;
+            case 3:
+                printf("Edad registrada: %d \n", visitanteModificar->edad);
+                printf("Ingrese nueva edad: ");
+                scanf("%d", &visitanteModificar->edad);
+                printf("\n");
+                printf("Nueva edad actual registrada: %d", visitanteModificar->edad);
+                break;
+            case 4:
+                if (visitanteModificar->zonaActual == NULL || visitanteModificar->boolEstaEnParque == 0) {
+                    printf("¡El visitante no está en el parque! \n");
+                    break;
+                }
+                if (visitanteModificar->zonaActual != NULL && visitanteModificar->boolEstaEnParque == 1){
+                    printf("Zona actual registrada: %s", visitanteModificar->zonaActual->nombre);
+                    do {
+                        printf("Ingrese codigo nueva zona actual: ");
+                        scanf("%d", &codigoZonaModificar);
+                        visitanteModificar->zonaActual
+                        visitanteModificar->zonaActual = buscarZonaPorCodigo(zonas,pLibreZonas,codigoZonaModificar);
+                        if (visitanteModificar->zonaActual == NULL) printf("\n Ingresa el codigo de una zona valida. \n");
+                    }while (visitanteModificar->zonaActual == NULL);
+                    printf("\n Nueva zona actual registrada: %s \n",visitanteModificar->zonaActual->nombre);
+                }
+                break;
+            case 0:
+                printf("Saliendo del menu modificar visitante... \n");
+                break;
+            default:
+                printf("Ingrese una opcion valida. \n");
+                break;
+        }
+    }while (opcionModificar != 0);
+}
+
 /*Funcion recursiva que cuenta la cantidad de visitantes en el parque al momento de ejecutarse*/
 int contarVisitantesEnParque(struct NodoVisitante *raiz) {
     int cont = 0;
@@ -568,6 +637,13 @@ void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visita
 
 }
 
+int flagEntradaFamiliarUsada(struct Entrada *entrada) {
+    if (entrada->usosFamiliar[0] == 0 && entrada->usosFamiliar[1] == 0) {
+        return 1;
+    }
+    return 0;
+}
+
 /*Funcion que valida la entrada del visitante.
  * esta funcion no tendra interaccion con el usuario
  * retorna un valor dependiendo del exito/error de la operacion
@@ -605,6 +681,7 @@ int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
                 if (alturaVisitante>=1.4) {
                     if (entradaVisitante->usosFamiliar[0]>0) {
                         entradaVisitante->usosFamiliar[0]--;
+                        if (flagEntradaFamiliarUsada(entradaVisitante)) entradaVisitante->estado = 1;
                         return 1;
                     }
                     return 3;
@@ -612,6 +689,7 @@ int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
 
                 if (entradaVisitante->usosFamiliar[1]>0) {
                     entradaVisitante->usosFamiliar[1]--;
+                    if (flagEntradaFamiliarUsada(entradaVisitante)) entradaVisitante->estado = 1;
                     return 1;
                 }
                 return 4;
@@ -647,6 +725,7 @@ void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar
         case 1:
             printf("¡Operacion realizada con exito! Ingresando visitante al parque. \n");
             visitanteIngresar->zonaActual = IBCLandia->zonas[0];
+            visitanteIngresar->boolEstaEnParque = 1;
             IBCLandia->ocupacionActual++;
             IBCLandia->ocupacionMaximaDiaria++;
             return;
@@ -732,7 +811,7 @@ int contarNoOperativas (struct Zona ** zonas, int plibre) {
     return contador;
 }
 
-//*retorna un arreglo dinamico de punteros con las atracciones NO operatiivas*//
+/*retorna un arreglo dinamico de punteros con las atracciones NO operatiivas*/
 struct Atraccion ** NoOperativas (struct Zona ** zonas, int plibre) {
     struct Atraccion ** ArregloNoOperativas;
     int cantidadNoOperativas; /*contador para el malloc*/
@@ -1212,7 +1291,7 @@ void MostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struc
 }
 
 
-struct NodoAtraccion *crearAtraccion(){
+struct NodoAtraccion *crearAtraccion(void){
     /*Asignacion de memoria a los nuevos struct e inicialización de variables*/
     struct Atraccion *atraccionNueva = malloc(sizeof(struct Atraccion));
     struct NodoAtraccion *nuevoNodo = malloc(sizeof(struct NodoAtraccion));
