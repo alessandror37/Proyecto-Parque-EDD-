@@ -54,7 +54,7 @@ struct Atraccion{
     char *nombre;
     int estado; /* 0 -> Operativa, 1 -> En mantenimiento, 2 -> Fuera de servicio, 3 -> Cerrada por horario */
     int capacidad;
-    struct Visitante visitantesEnAtraccion[CAPACIDAD_MAX]; /* La capacidad real de la atracción es la misma que se
+    struct Visitante *visitantesEnAtraccion[CAPACIDAD_MAX]; /* La capacidad real de la atracción es la misma que se
     encuentra dentro del struct y es la que se va a tomar en cuenta para la lógica de las funciones */
     int duracion; /*duración en minutos*/
     float alturaMinima;/*altura en metros*/
@@ -486,14 +486,13 @@ struct Visitante **DentroDelParque (struct Parque *IbcLandia) {
 int cantidadEnFila(struct NodoFila *fila) {
     int contador = 0;
     struct NodoFila *rec;
-    if (fila->sig == NULL) return 0;
+    if (fila->sig == fila) return 0;
 
     rec = fila->sig;
     /*recorre la fila*/
-    while (rec != NULL) {
+    while(rec != fila){
         contador++;
         rec = rec->sig;
-
     }
     return contador;
 
@@ -952,6 +951,8 @@ void agregarAtraccion(struct Zona **zonas, int *pLibreZonas){
 }
 
 void cerrarAtraccion(struct NodoAtraccion *atraccionACerrar, int razon){
+    int seleccion;
+
     /* Si la razon de cierre es fuera de horario simplemente se cierra */
     if(razon != 3){
         printf("Ingrese la razon de cierre\n");
@@ -962,9 +963,21 @@ void cerrarAtraccion(struct NodoAtraccion *atraccionACerrar, int razon){
 
     /* cambia el estado y vacia la fila de espera */
     atraccionACerrar -> datos -> estado = razon;
+    if(razon == 1){
+        printf("¿Vaciar la fila de espera? (1 = Si, 0 = No) \n");
+        scanf("%d", &seleccion);
+        while(seleccion < 0 || seleccion > 1) {
+            printf("Ingrese una opcion valida\n");
+            scanf("%d", &seleccion);
+        }
+
+        if(seleccion == 1){
+            atraccionACerrar -> datos -> headFila -> sig = atraccionACerrar -> datos -> headFila;
+        }
+        return;
+    }
     atraccionACerrar -> datos -> headFila -> sig = atraccionACerrar -> datos -> headFila;
 }
-
 
 void mostrarAtraccionesMasVisitadasEnZona(struct NodoAtraccion *original) {
     struct NodoAtraccion *actual;
@@ -1318,6 +1331,7 @@ void opcionAgregarVisitanteAFila(struct NodoVisitante *raiz){
         }while(rec -> sig != atraccion -> headFila);
         rec -> sig = nuevoNodo;
     }
+    printf("Tiempo de espera estimado %d", tiempoEsperaEstimado(atraccion));
 
     /* actualiza el contador de maxFila, el contador de visitantes totales y el registro de personas que visitaron la atracción*/
     personasEnFila = cantidadEnFila(atraccion -> headFila);
@@ -1377,6 +1391,71 @@ void moverVisitanteEntreZonas(struct Zona **zonas, int pLibreZonas, struct NodoV
 
     /* se cambia la zona actual del visitante */
     visitante -> zonaActual = zonaAViajar;
+}
+
+void iniciarAtraccion(struct Atraccion *atraccion){
+    struct NodoFila *persona;
+    int seleccion = 0;
+    int i, limite;
+
+    /* si no hay personas en la fila no se ejecuta nada */
+    if (cantidadEnFila(atraccion -> headFila) == 0) {
+        printf("No hay personas en la fila");
+        return;
+    }
+
+    /* se hace un recorrido y si aun quedan personas en la fila y el usuario quiere se realizan mas recorridos */
+    do{
+        /* se asegura de ingresar solo hasta la capacidad de la atraccion o hasta la cantidad de personas que hayan si esta es menor a la capacidad de la atraccion */
+        if(cantidadEnFila(atraccion->headFila) < atraccion -> capacidad) {
+            limite = cantidadEnFila(atraccion->headFila);
+        }else{
+            limite = atraccion -> capacidad;
+        }
+
+        /* los ingresa a la atraccion y los saca de la fila */
+        for(i = 0; i < limite; i++){
+            atraccion -> visitantesEnAtraccion[i] = atraccion -> headFila -> sig -> datos;
+            persona = atraccion -> headFila -> sig;
+            atraccion -> headFila -> sig = persona -> sig;
+            free(persona);
+        }
+
+        /* se expone el tiempo que duró el recorrido y las personas que fueron ingresadas */
+        printf("Tiempo de recorrido = %d min", atraccion -> duracion);
+        printf("Personas ingresadas a la atraccion: \n");
+        for(i = 0; i < limite; i++) {
+            printf("%s \n", atraccion -> visitantesEnAtraccion[i] -> nombre);
+            atraccion -> visitantesEnAtraccion[i] = NULL;
+        }
+
+        /* pregunta al usuario si quiere iniciar otro recorrido (solo funcionará si quedan personas en la fila) */
+        if(cantidadEnFila(atraccion -> headFila) > 0){
+            printf("¿Iniciar otro recorrido? (1 = Si, 0 = No)\n");
+            scanf("%d", &seleccion);
+            while(seleccion < 0 || seleccion > 1 ){
+                printf("Ingrese una opcion valida\n");
+                scanf("%d", &seleccion);
+            }
+        }
+    }while(seleccion != 0 && cantidadEnFila(atraccion->headFila) > 0);
+}
+
+void opcionIniciarRecorridoAtraccion(struct Zona **zonas, int pLibreZonas) {
+    struct Atraccion *atraccion;
+    struct Zona *zona;
+    int indiceZona;
+
+    printf("Seleccione la zona de la atraccion");
+    indiceZona = seleccionDeZona(zonas, pLibreZonas);
+    zona = zonas[indiceZona];
+    atraccion = seleccionDeAtraccion(zona -> headAtracciones);
+
+    if(cantidadEnFila(atraccion -> headFila) > 0) {
+            iniciarAtraccion(atraccion);
+    }else{
+        printf("No hay personas en la fila");
+    }
 }
 
 int main(void) {
