@@ -1881,7 +1881,7 @@ void sacarZonaDeArreglo(struct Zona *zona, struct Zona **zonas, int *pLibreZonas
 
     for (i = 0; i < *pLibreZonas; i++) {
         if(zonas[i] == zona){
-            /* compacto moviendo todo lo que está a la derecha una posición a la izquierda */
+            /* compacto moviendo lo que está a la derecha una posición a la izquierda */
             for (j = i; j < *pLibreZonas - 1; j++) {
                 zonas[j] = zonas[j + 1];
             }
