@@ -18,6 +18,8 @@ struct Entrada{
     int valor;
     int estado; /*0-> activa, 1-> utilizada, 2->anulada, 3-> vencida  */
     char *fechaUsada;
+    int usosFamiliar[2]; /*arreglo que se usa para manejar las entradas familiares, la posicion 0 maneja los adultos y
+    la posicion 1 maneja los menores*/
 };
 
 /*Lista simplemente enlazada con nodo fantasma*/
@@ -33,7 +35,8 @@ struct Visitante{
     int edad;
     char *rut;
     char *nombre;
-    float altura;
+    float altura; /*altura en metros. La entrada general es valida solo para personas de 1,4 metros, mientras que el
+    pase infantil es solo valido para personas menores de 1,4 metros*/
     struct NodoEntrada *headEntradas; /*head lista entradas de cada visitante*/
     struct Zona *zonaActual;
 };
@@ -86,7 +89,8 @@ struct Zona{
 
 struct Parque {
     int recaudacionTotal;
-    int totalVisitantes;
+    int ocupacionActual;
+    int ocupacionMaximaDiaria;
     struct Zona **zonas;
     int pLibreZonas; /*pLibre para array de zonas*/
     struct NodoVisitante *headVisitantes; /*head a la raiz de arbol visitantes*/
@@ -127,6 +131,19 @@ int seleccionDeZona(struct Zona **zonas, int pLibreZonas){
     return zona;
 }
 
+
+struct Zona *buscarZonaPorCodigo(struct Zona **zonas, int pLibre, int codigoBuscar) {
+    int i;
+
+    for (i = 0; i < pLibre; i++) {
+        if (zonas[i]->codigo == codigoBuscar) {
+            return zonas[i];
+        }
+    }
+    return NULL;
+
+}
+
 /*Busca a un visitante dentro del arbol por su ID
  * Utiliza recursividad
  */
@@ -140,6 +157,28 @@ struct Visitante *buscarVisitantePorID(struct NodoVisitante *raiz, int idVisitan
     } else {
         return buscarVisitantePorID(raiz->izq, idVisitanteBuscar);
     }
+}
+
+struct NodoVisitante *buscarNodoVisitantePorID(struct NodoVisitante *raiz, int idVisitanteBuscar) {
+    if (raiz == NULL) return NULL;
+    if (raiz->datos->idVisitante==idVisitanteBuscar) {
+        return raiz;
+    }
+    if (raiz->datos->idVisitante < idVisitanteBuscar) {
+        return buscarNodoVisitantePorID(raiz->der,idVisitanteBuscar);
+    } else {
+        return buscarNodoVisitantePorID(raiz->izq, idVisitanteBuscar);
+    }
+}
+
+struct NodoVisitante *buscarNodoVisitanteSucesorPorId(struct NodoVisitante *raiz, int idVisitante) {
+    struct NodoVisitante *rec = raiz;
+    if (raiz == NULL) return NULL;
+    rec = rec->der;
+    while (rec!=NULL && rec->izq != NULL) {
+        rec = rec->izq;
+    }
+    return rec;
 }
 
 /*Funcion que recorre el arbol de visitantes recursivamente para encontrar visitante por rut*/
@@ -166,7 +205,7 @@ int crearIdNuevoVisitante(struct NodoVisitante *raiz) {
     int idNuevo = 0, esUnica = 0;
     if (raiz==NULL) return 50000;
     while (esUnica != 1) {
-        idNuevo = rand() % (MAX_ID_VISITANTES + 1);
+        idNuevo = (rand() % MAX_ID_VISITANTES) + 1; /*rango de los ids: 1-100000*/
         if (buscarVisitantePorID(raiz, idNuevo) == NULL) {
             esUnica = 1;
         }
@@ -200,7 +239,8 @@ struct Visitante *crearVisitante(struct NodoVisitante *raiz) {
     /*Inicialización de datos fijos que no requieren input del usuario*/
     visitanteNuevo->boolEstaEnParque = 0;
     visitanteNuevo->zonaActual = NULL;
-    visitanteNuevo->headEntradas = NULL;
+    visitanteNuevo->headEntradas = malloc(sizeof(struct NodoEntrada));
+    visitanteNuevo->headEntradas->sig = NULL;
 
     return visitanteNuevo;
 }
@@ -246,6 +286,117 @@ void crearYAgregarVisitanteAArbol(struct NodoVisitante **raiz) {
     if (nodoAnterior == NULL) *raiz = nodoNuevo;
     else if (nodoAnterior->datos->idVisitante<nodoNuevo->datos->idVisitante) nodoAnterior->der = nodoNuevo;
     else nodoAnterior->izq = nodoNuevo;
+    printf("\n");
+    printf("Visitante ingresado en el sistema con exite, id del visitante creado: %d",nodoNuevo->datos->idVisitante);
+}
+
+void eliminarVisitanteDeArbolNoPrints(struct NodoVisitante **raiz, int idVisitanteEliminar) {
+    int flagIzq = 0,flagRaiz = 0;
+    struct Visitante *visitanteEliminar;
+    struct NodoVisitante *nodoAnterior, *nodoEliminar, *nodoSucesor,*nodoHijo = NULL;
+    if (*raiz == NULL) {
+        return;
+    }
+    visitanteEliminar = buscarVisitantePorID(*raiz,idVisitanteEliminar);
+    if (visitanteEliminar == NULL) {
+        return;
+    }
+    nodoEliminar = buscarNodoVisitantePorID(*raiz,idVisitanteEliminar);
+    nodoAnterior = buscarNodoParaVisitanteNuevo(*raiz,idVisitanteEliminar);
+    if (nodoAnterior == NULL) flagRaiz = 1;
+    if (flagRaiz == 0) {
+        if (nodoAnterior->datos->idVisitante > idVisitanteEliminar) flagIzq = 1;
+    }
+    if (nodoEliminar->izq == NULL && nodoEliminar->der == NULL) {
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = NULL;
+            else nodoAnterior->der = NULL;
+        }else *raiz = NULL;
+        free(nodoEliminar);
+        return;
+    }
+    if (nodoEliminar->izq != NULL && nodoEliminar->der == NULL) {
+        nodoHijo = nodoEliminar ->izq;
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = nodoHijo;
+            else nodoAnterior->der = nodoHijo;
+        } else *raiz = nodoHijo;
+        free(nodoEliminar);
+        return;
+    }
+    if (nodoEliminar->der != NULL && nodoEliminar->izq == NULL) {
+        nodoHijo = nodoEliminar->der;
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = nodoHijo;
+            else nodoAnterior->der = nodoHijo;
+        } else *raiz = nodoHijo;
+        free(nodoEliminar);
+        return;
+    }
+    if (nodoEliminar->izq != NULL && nodoEliminar->der != NULL) {
+        nodoSucesor = buscarNodoVisitanteSucesorPorId(*raiz,idVisitanteEliminar);
+        nodoEliminar->datos = nodoSucesor->datos;
+        eliminarVisitanteDeArbolNoPrints(&nodoEliminar->der,nodoSucesor->datos->idVisitante);
+    }
+}
+
+void eliminarVisitanteDeArbol(struct NodoVisitante **raiz, int idVisitanteEliminar) {
+    int flagIzq = 0,flagRaiz = 0;
+    struct Visitante *visitanteEliminar;
+    struct NodoVisitante *nodoAnterior, *nodoEliminar, *nodoSucesor,*nodoHijo = NULL;
+    printf("\n");
+    printf("Procesando eliminacion de visitante del sistema... \n");
+    if (*raiz == NULL) {
+        printf("ERROR: No existe ningun visitante en el sistema.\n");
+        return;
+    }
+    visitanteEliminar = buscarVisitantePorID(*raiz,idVisitanteEliminar);
+    if (visitanteEliminar == NULL) {
+        printf("ERROR: No existe un visitante con el id \n");
+        return;
+    }
+    nodoEliminar = buscarNodoVisitantePorID(*raiz,idVisitanteEliminar);
+    nodoAnterior = buscarNodoParaVisitanteNuevo(*raiz,idVisitanteEliminar);
+    if (nodoAnterior == NULL) flagRaiz = 1;
+    if (flagRaiz == 0) {
+        if (nodoAnterior->datos->idVisitante > idVisitanteEliminar) flagIzq = 1;
+    }
+    if (nodoEliminar->izq == NULL && nodoEliminar->der == NULL) {
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = NULL;
+            else nodoAnterior->der = NULL;
+        }else *raiz = NULL;
+        free(nodoEliminar);
+        printf("Visitante eliminado del sistema con exito. \n");
+        return;
+    }
+    if (nodoEliminar->izq != NULL && nodoEliminar->der == NULL) {
+        nodoHijo = nodoEliminar ->izq;
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = nodoHijo;
+            else nodoAnterior->der = nodoHijo;
+        } else *raiz = nodoHijo;
+        free(nodoEliminar);
+        printf("Visitante eliminado del sistema con exito. \n");
+        return;
+    }
+    if (nodoEliminar->der != NULL && nodoEliminar->izq == NULL) {
+        nodoHijo = nodoEliminar->der;
+        if (flagRaiz == 0) {
+            if (flagIzq) nodoAnterior->izq = nodoHijo;
+            else nodoAnterior->der = nodoHijo;
+        } else *raiz = nodoHijo;
+        free(nodoEliminar);
+        printf("Visitante eliminado del sistema con exito. \n");
+        return;
+    }
+    if (nodoEliminar->izq != NULL && nodoEliminar->der != NULL) {
+        nodoSucesor = buscarNodoVisitanteSucesorPorId(*raiz,idVisitanteEliminar);
+        nodoEliminar->datos = nodoSucesor->datos;
+        eliminarVisitanteDeArbolNoPrints(&nodoEliminar->der,nodoSucesor->datos->idVisitante);
+        printf("Visitante eliminado del sistema con exito. \n");
+        return;
+    }
 }
 
 /*Funcion recursiva que cuenta la cantidad de visitantes en el parque al momento de ejecutarse*/
@@ -277,7 +428,7 @@ struct Entrada *buscarEntradaPorIdEnVisitante(struct NodoEntrada *head, int idEn
 }
 
 /*Esta funcion recorre el arbol de visitantes y para cada visitante recorre su lista para encontrar la entrada
- * solicitada por id. En caso de no ser encontrada retorna NULL.
+ * solicitada por ID. En caso de no ser encontrada retorna NULL.
  */
 struct Entrada *buscarEntradaPorId(struct NodoVisitante *raiz, int idEntrada) {
     struct Entrada *entradaBuscar;
@@ -319,6 +470,15 @@ struct Entrada *crearEntrada(struct NodoVisitante *raiz, int tipoEntrada) {
     entradaNueva->estado = 0;
     entradaNueva->valor = valorEntradas[tipoEntrada];
     entradaNueva->fechaUsada = fechaActual;
+    if (tipoEntrada == 2){
+        entradaNueva->usosFamiliar[0] = 2;
+        entradaNueva->usosFamiliar[1] = 2;
+    }
+    else {
+        entradaNueva->usosFamiliar[0] = 0;
+        entradaNueva->usosFamiliar[1] = 0;
+    }
+
     return entradaNueva;
 }
 
@@ -337,7 +497,6 @@ struct NodoEntrada *obtenerNodoAnteriorParaEntradaNueva(struct NodoEntrada *head
     return NULL;
 }
 
-
 /*Esta funcion crea y agrega una entrada a la lista del visitante. Se debe tener de antes un puntero al visitante para
  * poder entregarle el head de su lista de entradas a esta funcion
  */
@@ -350,25 +509,192 @@ void crearYAgregarEntradaALista(struct NodoVisitante *raiz,struct NodoEntrada *h
     else nodoAnterior->sig = nodoNuevo;
 }
 
-/*funcion inutil quizas la borre despues XD*/
-void cambiarEstadoEntrada(struct Entrada *entrada,int estadoNuevo) {
-    entrada->estado = estadoNuevo;
+/*funcion que compra entrada y la añade a la lista de entradas del visitante
+ * La función asume que el buffer de entrada se limpió antes de ser llamada
+ */
+void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visitante) {
+    int tipoEntradaComprar = 0,opcionValida = 0,opcionDuenoCompra,idVisitanteReceptor;
+    struct Visitante *visitanteReceptorEntrada;
+    printf("Tipos de entrada: \n");
+    printf("0.- Entrada general. \n");
+    printf("1.- Pase infantil. \n");
+    printf("2.- Entrada familiar. \n");
+    printf("3.- Entrada VIP. \n");
+    do {
+        printf("\n");
+        printf("Ingrese el tipo de entrada que el visitante desea comprar: ");
+        scanf("%d",&tipoEntradaComprar);
+        if (tipoEntradaComprar >= 0 && tipoEntradaComprar <= 3) opcionValida = 1;
+        else {
+            printf("\n");
+            printf("Ingrese una opcion valida.");
+        }
+    }while (opcionValida!=1);
+    opcionValida = 0;
+
+    printf("\n");
+    printf("¿La entrada es para quien hace la compra o para otro visitante? \n");
+    printf("1.- Visitante que realiza la compra. \n");
+    printf("2.- Otro visitante. \n");
+    do {
+        printf("\n");
+        printf("Ingrese opcion deseada: ");
+        scanf("%d", &opcionDuenoCompra);
+        if (opcionDuenoCompra>0 && opcionDuenoCompra<3) opcionValida = 1;
+        else {
+            printf("\n");
+            printf("Ingrese una opcion valida.");
+        }
+    }while (opcionValida!=1);
+
+    if (opcionDuenoCompra==1) {
+        visitanteReceptorEntrada = visitante;
+    }else {
+        do {
+            opcionValida = 0;
+            printf("\n");
+            printf("Ingrese id del visitante al que se le asignara la entrada: ");
+            scanf("%d",&idVisitanteReceptor);
+            visitanteReceptorEntrada = buscarVisitantePorID(raiz,idVisitanteReceptor);
+            if (visitanteReceptorEntrada != NULL) opcionValida = 1;
+            else {
+                printf("\n");
+                printf("ERROR: No se encontro un visitante con el id %d , intentelo de nuevo.",idVisitanteReceptor);
+            }
+        }while (opcionValida!= 1);
+    }
+
+    crearYAgregarEntradaALista(raiz,visitanteReceptorEntrada->headEntradas,tipoEntradaComprar);
+
 }
 
-void comprarEntradaVisitante(struct Visitante *visitante) {
-    printf("Ingrese entrada que desea comprar");
-}
-
+/*Funcion que valida la entrada del visitante.
+ * esta funcion no tendra interaccion con el usuario
+ * retorna un valor dependiendo del exito/error de la operacion
+ * 0 -> No existe id con esa entrada
+ * 1 -> operacion realizada con exito/entrada validada, permitir paso al visitante
+ * 2 -> La altura del visitante no coincide con el tipo de entrada que se esta intentando usar
+ * 3 -> Maximo de usos adultos en entrada familiar alcanzada.
+ * 4 -> Maximo de usos infantil en entrada familiar alcanzada
+ * 5-> Entrada no valida (porque ya fue utilizada, esta vencida o fue anulada)
+ *
+ * NOTA: La funcion que llame a esta deberia encargarse de hacer el check de que la entrada familiar haya sido completamente
+ * utilizada, para actualizar su estado
+*/
 int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
+    float alturaVisitante = visitante->altura;
+    struct Entrada *entradaVisitante = buscarEntradaPorIdEnVisitante(visitante->headEntradas,idEntrada);
+    if (entradaVisitante == NULL) return 0;
+    switch (entradaVisitante->estado) {
+        case 0:
+            if (entradaVisitante->tipo == 0 || entradaVisitante->tipo == 3) {
+                if (alturaVisitante>=1.4) {
+                    entradaVisitante->estado = 1;
+                    return 1;
+                }
+                return 2;
+            }
+            if (entradaVisitante->tipo == 1) {
+                if (alturaVisitante<1.4) {
+                    entradaVisitante->estado = 1;
+                    return 1;
+                }
+                return 2;
+            }
+            if (entradaVisitante->tipo == 2) {
+                if (alturaVisitante>=1.4) {
+                    if (entradaVisitante->usosFamiliar[0]>0) {
+                        entradaVisitante->usosFamiliar[0]--;
+                        return 1;
+                    }
+                    return 3;
+                }
+
+                if (entradaVisitante->usosFamiliar[1]>0) {
+                    entradaVisitante->usosFamiliar[1]--;
+                    return 1;
+                }
+                return 4;
+
+            }
+            break;
+        default:
+            return 5;
+    }
+    return 6;
+}
+
+void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar) {
+    int idEntradaVisitante,resultadoOperacionValidar;
+    struct Entrada *entradaVisitanteIngresar;
+    struct Visitante *visitanteIngresar;
+    printf("\n");
+    printf("Procesando ingreso del visitante... \n");
+    visitanteIngresar = buscarVisitantePorID(IBCLandia->headVisitantes, idVisitanteIngresar);
+    if (visitanteIngresar == NULL) {
+        printf("ERROR: No existe ningun visitante con el id %d . \n", idVisitanteIngresar);
+        return;
+    }
+    printf("Ingrese el ID de la entrada que se va a usar: ");
+    scanf("%d",&idEntradaVisitante);
+    entradaVisitanteIngresar = buscarEntradaPorId(IBCLandia->headVisitantes,idEntradaVisitante);
+    resultadoOperacionValidar = validarEntradaVisitante(visitanteIngresar,idEntradaVisitante);
+    printf("\n");
+    switch (resultadoOperacionValidar) {
+        case 0:
+            printf("ERROR: No existe ninguna entrada con el id %d . \n",idEntradaVisitante);
+            return;
+        case 1:
+            printf("¡Operacion realizada con exito! Ingresando visitante al parque. \n");
+            visitanteIngresar->zonaActual = IBCLandia->zonas[0];
+            IBCLandia->ocupacionActual++;
+            IBCLandia->ocupacionMaximaDiaria++;
+            return;
+        case 2:
+            printf("ERROR: La altura del visitante no coincide con el tipo de entrada que se esta intentando usar \n");
+            return;
+        case 3:
+            printf("ERROR: Maximo de usos adultos en entrada familiar alcanzada. \n");
+            return;
+        case 4:
+            printf("ERROR: Maximo de usos infantil en entrada familiar alcanzada \n");
+            return;
+        case 5:
+            switch (entradaVisitanteIngresar->estado) {
+            case 1:
+                    printf("ERROR: La entrada ya fue utilizada. \n");
+                    return;
+            case 2:
+                    printf("ERROR: La entrada esta anulada. \n");
+                    return;
+            case 3:
+                    printf("ERROR: La entrada esta vencida. \n");
+                    return;
+            }
+        case 6:
+            printf("ERROR: No se pudo completar la operacion. \n");
+    }
+}
+
+void sacarVisitanteDelParque(struct Parque *IBCLandia,int idVisitanteSalir) {
+    struct Visitante *visitanteSalir;
+    struct Zona *ultimaZonavisitante;
+    printf("\n");
+    printf("Procesando salida del visitante... \n");
+    visitanteSalir = buscarVisitantePorID(IBCLandia->headVisitantes, idVisitanteSalir);
+    if (visitanteSalir == NULL) {
+        printf("ERROR: No existe ningun visitante con el id %d . \n", idVisitanteSalir);
+        return;
+    }
+    if (visitanteSalir->zonaActual != NULL) {
+        visitanteSalir->zonaActual->ocupacionActual--;
+        visitanteSalir->zonaActual = NULL;
+    }
+    IBCLandia->ocupacionActual--;
+    printf("Salida del visitante registrada con exito.");
 
 }
 
-void mostrarMenuVisitantes(void) {
-    int c;
-
-
-
-}
 
 
 
@@ -390,7 +716,6 @@ int NoOperativasEnZona (struct NodoAtraccion *headAtracciones) {
 
     return contador;
 }
-
 /*esta funcion cuenta las NO operativas por zona*/
 int contarNoOperativas (struct Zona ** zonas, int plibre) {
     int contador = 0;
