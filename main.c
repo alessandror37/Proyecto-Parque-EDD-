@@ -1327,7 +1327,6 @@ struct ReporteFilas ** obtenerArregloAtraccionesMayorFilaAMenor (struct Parque *
 
 }
 /*muestra todas las atracciones ordenadas de mayor a menor dependiendo de la mayor fila registrada*/
-/*todo */
 void mostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struct Parque *IBCLandia) {
     struct Atraccion *Atraccion;
     int cantAtracciones;
@@ -1346,6 +1345,8 @@ void mostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struc
             printf("%i.%s -> %d \n",i + 1, reporte[i]->datos->nombre, reporte[i]->tamFila);
         }
     }
+
+    /*FALTA UN FREE ACA*/
 }
 
 
