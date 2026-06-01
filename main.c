@@ -2493,6 +2493,12 @@ void mostrarMenuAtracciones(struct Parque *IBCLandia){
     int zona, opcionMenu, opcionValida = 1,c;
     struct Atraccion *atraccionElegida = NULL;
 
+    if(IBCLandia -> zonas == NULL){
+        printf("Aviso: No se puede acceder a este menu si no se ha creado ninguna zona\n");
+        printf("Volviendo al menu anterior...\n\n");
+        return;
+    }
+
     printf("\n ------------------------ \n"
            "Bienvenido al menu de Zonas de IBCLandia\n"
            "------------------------\n \n");
