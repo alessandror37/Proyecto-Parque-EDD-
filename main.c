@@ -7,9 +7,7 @@
 #define CAPACIDAD_MAX 100
 #define MAX_ID_VISITANTES 100000 /*sintaxis para la generacion de id: id = rand() % (MAX_ID_VISITANTES + 1)*/
 char fechaActual[11];
-int recaudacionEntradas[4]; /*En cada elemento del array se guarda la recaudacion en su respectivo estado
-Ej: un visitante compra una entrada general, entonces se realiza recaudacionEntradas[entrada->tipo] += entrada->valor*/
-int valorEntradas[4] = {22990,10990,0,44990}; /*En cada elemento del array se guarda el valor de la entrada con su respectivo tipo
+int valorEntradas[4] = {22990,10990,44900,44990}; /*En cada elemento del array se guarda el valor de la entrada con su respectivo tipo
 Ej: para escribir el valor de una entrada en una funcion se usaria: entrada->valor = valorEntradas[tipo]*/
 struct Entrada;
 struct NodoEntrada;
@@ -1483,7 +1481,7 @@ void mostrarAtraccionesMasVisitadasEnZona(struct NodoAtraccion *original) {
     do {
         actual = actual->sig;
         if (max == actual->datos->visitantesTotales) {
-            printf(actual->datos->nombre);
+            printf("%s",actual->datos->nombre);
         }
     }while (actual->sig != NULL);
 }
@@ -1728,7 +1726,7 @@ struct Visitante *buscarVisitantePorRutOPorID(struct NodoVisitante *raiz){
     int i, esRut = 0;
 
     printf("INGRESE RUT (FORMATO 12.345.678-9) O ID\n");
-    scanf("%s", input);
+    scanf("%12s", input);
 
     for(i = 0; input[i] != '\0'; i++){
         if(input[i] == '-' || input[i] == '.'){
