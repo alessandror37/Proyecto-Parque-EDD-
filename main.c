@@ -11,6 +11,15 @@ int recaudacionEntradas[4]; /*En cada elemento del array se guarda la recaudacio
 Ej: un visitante compra una entrada general, entonces se realiza recaudacionEntradas[entrada->tipo] += entrada->valor*/
 int valorEntradas[4] = {22990,10990,0,44990}; /*En cada elemento del array se guarda el valor de la entrada con su respectivo tipo
 Ej: para escribir el valor de una entrada en una funcion se usaria: entrada->valor = valorEntradas[tipo]*/
+struct Entrada;
+struct NodoEntrada;
+struct Visitante;
+struct NodoVisitante;
+struct NodoFila;
+struct Atraccion;
+struct NodoAtraccion;
+struct Zona;
+struct Parque;
 
 struct Entrada{
     int idEntrada;
@@ -1378,8 +1387,10 @@ struct NodoAtraccion *crearAtraccion(void){
 
     /* valores default de la atracción */
     atraccionNueva -> visitantesTotales = 0;
-    atraccionNueva -> estado = 2; /* fuera de servicio*/
-    atraccionNueva -> headFila = NULL;
+    atraccionNueva -> estado = 2; /* fuera de servicio */
+    atraccionNueva -> headFila = (struct NodoFila*)malloc(sizeof(struct NodoFila));
+    atraccionNueva -> headFila -> datos = NULL;
+    atraccionNueva -> headFila -> sig = atraccionNueva -> headFila;
 
     nuevoNodo -> datos = atraccionNueva;
     nuevoNodo -> sig = NULL;
@@ -1413,6 +1424,19 @@ void agregarAtraccion(struct Zona **zonas, int *pLibreZonas){
     rec -> sig -> sig = NULL;
 }
 
+void eliminarFilaAtraccion(struct NodoFila *headFila) {
+    struct NodoFila *rec;
+    struct NodoFila *temp;
+
+    rec = headFila -> sig;
+    while(rec != headFila){
+        temp = rec;
+        rec = rec -> sig;
+        free(temp);
+    }
+    headFila -> sig = headFila;
+}
+
 void cerrarAtraccion(struct NodoAtraccion *atraccionACerrar, int razon){
     int seleccion;
 
@@ -1435,11 +1459,11 @@ void cerrarAtraccion(struct NodoAtraccion *atraccionACerrar, int razon){
         }
 
         if(seleccion == 1){
-            atraccionACerrar -> datos -> headFila -> sig = atraccionACerrar -> datos -> headFila;
+            eliminarFilaAtraccion(atraccionACerrar -> datos -> headFila);
         }
         return;
     }
-    atraccionACerrar -> datos -> headFila -> sig = atraccionACerrar -> datos -> headFila;
+    eliminarFilaAtraccion(atraccionACerrar -> datos -> headFila);
 }
 
 void mostrarAtraccionesMasVisitadasEnZona(struct NodoAtraccion *original) {
@@ -1674,7 +1698,7 @@ struct Atraccion *seleccionDeAtraccion(struct NodoAtraccion *headAtracciones){
     }while(rec != NULL);
 
     if(contador == 0){
-        printf("No hay atracciones operativas");
+        printf("No hay atracciones operativas en esta zona");
         return NULL;
     }
     scanf("%d", &seleccion);
@@ -1853,6 +1877,11 @@ void moverVisitanteEntreZonas(struct Zona **zonas, int pLibreZonas, struct NodoV
     /* actualizacion de contadores de la zona anterior y la zona actual */
     zonaAViajar = zonas[zona];
     zonaAnterior = visitante -> zonaActual;
+    if(zonaAViajar -> capacidad == zonaAViajar -> ocupacionHistorica){
+        printf("Zona llena\n");
+        return;
+    }
+
     comprobacionesYUpdatesEnCambioDeZona(zonaAnterior, zonaAViajar, zonas, pLibreZonas);
 
     /* se cambia la zona actual del visitante */
@@ -1924,6 +1953,190 @@ void opcionIniciarRecorridoAtraccion(struct Zona **zonas, int pLibreZonas) {
     }
 }
 
+int inputEntero(void){
+    int numero;
+    scanf("%d", &numero);
+    return numero;
+}
+
+float inputFlotante(void){
+    float numero;
+    scanf("%f", &numero);
+    return numero;
+}
+
+void cambiarValorNumerico(int *valor){
+    int nuevoValor;
+
+    nuevoValor = inputEntero();
+    while(nuevoValor < 0){
+        printf("No se aceptan valores negativos\n");
+        nuevoValor = inputEntero();
+    }
+    *valor = nuevoValor;
+}
+
+void cambiarValorNumericoFlotante(float *valor){
+    float nuevoValor;
+
+    nuevoValor = inputFlotante();
+    while(nuevoValor < 0){
+        printf("No se aceptan valores negativos\n");
+        nuevoValor = inputFlotante();
+    }
+    *valor = nuevoValor;
+}
+
+void cambiarCadena(char **cadena){
+    char buffer[100];
+
+    fgets(buffer, 100, stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
+    free(*cadena);
+
+    *cadena = (char *)malloc(strlen(buffer) + 1);
+    strcpy(*cadena, buffer);
+}
+
+void eliminarAtraccion(struct Atraccion *atraccion, struct Zona *zona){
+    struct NodoAtraccion *rec = zona -> headAtracciones;
+    struct NodoAtraccion *temp;
+
+    /* desenlazo la atraccion de la lista de atracciones de la zona */
+    while(rec != NULL){
+        if(rec -> datos == atraccion) {
+            temp = rec;
+            rec -> ant -> sig = rec -> sig;
+            rec -> sig -> ant = rec -> ant;
+        }
+        rec = rec -> sig;
+    }
+    free(temp);
+    free(atraccion->nombre);
+    free(atraccion->registroVisitantes);
+    free(atraccion->headFila);
+}
+
+void sacarZonaDeArreglo(struct Zona *zona, struct Zona **zonas, int *pLibreZonas){
+    int i, j;
+
+    for (i = 0; i < *pLibreZonas; i++) {
+        if(zonas[i] == zona){
+            /* compacto moviendo lo que está a la derecha una posición a la izquierda */
+            for (j = i; j < *pLibreZonas - 1; j++) {
+                zonas[j] = zonas[j + 1];
+            }
+            zonas[*pLibreZonas - 1] = NULL;
+            pLibreZonas--;
+            return;
+        }
+    }
+}
+
+void eliminarZona(struct Zona *zona, struct Zona **zonas, int *pLibreZonas){
+    struct NodoAtraccion *rec = zona -> headAtracciones -> sig;
+    struct NodoAtraccion *temp;
+
+    sacarZonaDeArreglo(zona, zonas, pLibreZonas);
+    free(zona -> nombre);
+    free(zona -> tematica);
+    free(zona -> horaInicio);
+    free(zona -> horaCierre);
+    while(rec != NULL){
+        temp = rec;
+        rec = rec -> sig;
+        eliminarAtraccion(temp -> datos, zona);
+    }
+    free(zona -> headAtracciones);
+}
+
+void menuModificarAtraccion(struct Zona **zonas, int pLibreZonas){
+    int zona, opcion = 1;
+    struct Atraccion *atraccion;
+
+    zona = seleccionDeZona(zonas, pLibreZonas);
+    atraccion = seleccionDeAtraccion(zonas[zona] -> headAtracciones);
+
+    while(opcion != 0){
+        printf("Modificar atraccion\n");
+        printf("Opciones\n");
+        printf("1. Cambiar nombre\n");
+        printf("2. Cambiar capacidad\n");
+        printf("3. Cambiar tiempo de recorrido\n");
+        printf("4. Cambiar altura minima para ingresar\n");
+        printf("5. Cambiar edad minima para ingresar\n");
+        printf("6. Eliminar atraccion");
+        printf("0. Volver");
+        scanf("%d", &opcion);
+        while(opcion < 0 || opcion > 5) {
+            printf("Ingrese una opcion valida\n");
+            scanf("%d", &opcion);
+        }
+
+        switch(opcion){
+            case 1:
+                printf("Ingrese nuevo nombre\n");
+                cambiarCadena(&atraccion->nombre);
+            case 2:
+                cambiarValorNumerico(&(atraccion->capacidad));
+            case 3:
+                cambiarValorNumerico(&(atraccion->duracion));
+            case 4:
+                cambiarValorNumericoFlotante(&(atraccion->alturaMinima));
+            case 5:
+                cambiarValorNumerico(&(atraccion->edadMinima));
+            case 6:
+                if(atraccion -> estado == 2 || atraccion -> estado == 3){
+                    eliminarAtraccion(atraccion, zonas[zona]);
+                    return;
+                }
+                printf("No se puede eliminar una atraccion que no está cerrada\n");
+            default:
+                printf("Volviendo al menu anterior");
+        }
+    }
+}
+
+void menuModificarZona(struct Zona **zonas, int *pLibreZonas){
+    int zona, opcion = 1;
+
+    zona = seleccionDeZona(zonas, *pLibreZonas);
+
+    while(opcion != 0){
+        printf("Modificar zona\n");
+        printf("Opciones\n");
+        printf("1. Cambiar nombre\n");
+        printf("2. Cambiar tematica\n");
+        printf("3. Cambiar capacidad\n");
+        printf("4. Eliminar zona\n");
+        printf("0. Volver");
+        scanf("%d", &opcion);
+        while(opcion < 0 || opcion > 3) {
+            printf("Ingrese una opcion valida\n");
+            scanf("%d", &opcion);
+        }
+
+        switch(opcion){
+            case 1:
+                printf("Ingrese nuevo nombre\n");
+                cambiarCadena(&zonas[zona]->nombre);
+            case 2:
+                cambiarCadena(&zonas[zona]->tematica);
+            case 3:
+                cambiarValorNumerico(&zonas[zona]->capacidad);
+            case 4:
+                if(zonas[zona] -> ocupacionActual == 0){
+                    eliminarZona(zonas[zona], zonas, pLibreZonas);
+                    return;
+                }
+                printf("No se puede eliminar una zona con personas dentro\n");
+            default:
+                printf("Volviendo al menu anterior");
+        }
+    }
+}
+
+
 int main(void) {
     int opcionMenu, c;
     opcionMenu = 1;
@@ -1946,7 +2159,7 @@ int main(void) {
 
         switch (opcionMenu) {
             case 1:
-                mostrarMenuVisitantes();
+                /* mostrarMenuVisitantes(); */
             case 2:
                 /*mostrarMenuEntradas();*/
             default:
