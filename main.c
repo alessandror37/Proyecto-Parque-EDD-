@@ -882,6 +882,27 @@ void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar
     }
 }
 
+void sacarVisitanteDelParqueNoPrints(struct Parque *IBCLandia,int idVisitanteSalir) {
+    struct Visitante *visitanteSalir;
+    visitanteSalir = buscarVisitantePorID(IBCLandia->headVisitantes, idVisitanteSalir);
+    if (visitanteSalir == NULL) {
+        return;
+    }
+    if (visitanteSalir->zonaActual == NULL) {
+        return;
+    }
+    if (visitanteSalir->zonaActual != NULL) {
+        visitanteSalir->zonaActual->ocupacionActual--;
+        visitanteSalir->zonaActual = NULL;
+        visitanteSalir->boolEstaEnParque = 0;
+    }
+
+    if (visitanteSalir->boolEsVIP == 1) visitanteSalir->boolEsVIP = 0;
+
+    IBCLandia->ocupacionActual--;
+
+}
+
 void sacarVisitanteDelParque(struct Parque *IBCLandia,int idVisitanteSalir) {
     struct Visitante *visitanteSalir;
     printf("\n");
@@ -2708,6 +2729,105 @@ void mostrarMenuEntradas(struct Parque *IBCLandia) {
 
 }
 
+
+
+
+/*nota, funciones que me sirven para cerrar el parque:*/
+/*obtenerArregloVisitantesDentroDelParque(struct Parque *IbcLandia) retorna un arreglo dinamico de los visitantes que siguen adentro*/
+/*sacarVisitanteDelParque(struct Parque *IBCLandia, int idVisitanteSalir) cambia el estado del visitante */
+/*cerrarAtraccion(struct Atraccion *atraccionACerrar, int razon) cierra filas, cambia estado de la atracción*/
+
+void CerrarParque (struct Parque *IbcLandia) {
+    int i;
+    int cantidadVisitantes;
+    struct Visitante **EnParque = NULL;
+    struct NodoAtraccion *cerrar = NULL;
+
+    if (IbcLandia == NULL) {
+        printf("Error con el parque.\n");
+        return;
+    }
+
+
+
+    /*Cerrar atracciones para sacar a los visitantes*/
+
+    for (i = 0; i < IbcLandia->pLibreZonas; i++) {
+        if (IbcLandia->zonas[i] != NULL) {
+            cerrar = IbcLandia->zonas[i]->headAtracciones ->sig;
+            while (cerrar != NULL) {
+                if (cerrar->datos->estado == 0) {
+                    cerrarAtraccion(cerrar->datos, 3);
+                }
+                cerrar = cerrar->sig;
+            }
+        }
+    }
+
+    printf("Atracciones cerradas con exito, ");
+
+    /*sacar a la gente*/
+    EnParque = obtenerArregloVisitantesDentroDelParque(IbcLandia);
+    cantidadVisitantes = IbcLandia->ocupacionActual;
+
+    if (cantidadVisitantes == 0 ) {
+        printf("no habian visitantes dentro del parque.\n");
+    }
+
+    for (i = 0; i < cantidadVisitantes; i++) {
+        sacarVisitanteDelParqueNoPrints(IbcLandia, EnParque[i]->idVisitante);
+    }
+
+    if (EnParque != NULL) {
+        free(EnParque);
+    }
+
+    if (IbcLandia->ocupacionActual != 0) {
+        printf("Error al sacar visitantes.\n");
+        return;
+    }else if (cantidadVisitantes > 0) {
+        printf("todos los visitantes salieron del parque.\n");
+    }
+
+
+    printf("parque cerrado con exito! \n");
+
+}
+
+
+void AbrirParque (struct Parque *IbcLandia) {
+    int i;
+    struct NodoAtraccion *rec = NULL;
+    if (IbcLandia == NULL) {
+        printf("Error con el parque.\n");
+        return;
+    }
+
+    IbcLandia->ocupacionMaximaDiaria = 0;
+
+    for (i = 0; i < IbcLandia->pLibreZonas; i++) {
+        if (IbcLandia->zonas[i] != NULL) {
+
+            IbcLandia->zonas[i]->ocupacionHistorica = 0;
+            rec = IbcLandia->zonas[i]->headAtracciones->sig;
+
+            while (rec != NULL) {
+
+                if (rec->datos->estado == 3) {
+                    rec->datos->estado = 0;
+                }
+
+                rec->datos->mayorFilaRegistrada = 0;
+
+                rec = rec->sig;
+            }
+
+        }
+    }
+
+    printf("Parque abierto con exito! \n");
+
+}
 
 void cargarDatosPrueba(struct Parque *IBCLandia) {
     struct Atraccion *a1;
