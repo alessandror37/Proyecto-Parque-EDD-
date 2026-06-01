@@ -648,7 +648,7 @@ void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visita
     opcionValida = 0;
 
     printf("\n");
-    printf("¿La entrada es para quien hace la compra o para otro visitante? \n");
+    printf("La entrada es para quien hace la compra o para otro visitante? \n");
     printf("1.- Visitante que realiza la compra. \n");
     printf("2.- Otro visitante. \n");
     do {
@@ -843,7 +843,7 @@ void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar
             printf("ERROR: No existe ninguna entrada con el id %d . \n",idEntradaVisitante);
             return;
         case 1:
-            printf("¡Operacion realizada con exito! Ingresando visitante al parque. \n");
+            printf("Operacion realizada con exito! Ingresando visitante al parque. \n");
             visitanteIngresar->zonaActual = IBCLandia->zonas[0];
             visitanteIngresar->boolEstaEnParque = 1;
             IBCLandia->ocupacionActual++;
@@ -882,6 +882,27 @@ void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar
     }
 }
 
+void sacarVisitanteDelParqueNoPrints(struct Parque *IBCLandia,int idVisitanteSalir) {
+    struct Visitante *visitanteSalir;
+    visitanteSalir = buscarVisitantePorID(IBCLandia->headVisitantes, idVisitanteSalir);
+    if (visitanteSalir == NULL) {
+        return;
+    }
+    if (visitanteSalir->zonaActual == NULL) {
+        return;
+    }
+    if (visitanteSalir->zonaActual != NULL) {
+        visitanteSalir->zonaActual->ocupacionActual--;
+        visitanteSalir->zonaActual = NULL;
+        visitanteSalir->boolEstaEnParque = 0;
+    }
+
+    if (visitanteSalir->boolEsVIP == 1) visitanteSalir->boolEsVIP = 0;
+
+    IBCLandia->ocupacionActual--;
+
+}
+
 void sacarVisitanteDelParque(struct Parque *IBCLandia,int idVisitanteSalir) {
     struct Visitante *visitanteSalir;
     printf("\n");
@@ -898,6 +919,7 @@ void sacarVisitanteDelParque(struct Parque *IBCLandia,int idVisitanteSalir) {
     if (visitanteSalir->zonaActual != NULL) {
         visitanteSalir->zonaActual->ocupacionActual--;
         visitanteSalir->zonaActual = NULL;
+        visitanteSalir->boolEstaEnParque = 0;
     }
 
     if (visitanteSalir->boolEsVIP == 1) visitanteSalir->boolEsVIP = 0;
@@ -1465,7 +1487,7 @@ void agregarAtraccion(struct Zona **zonas, int pLibreZonas){
     atraccionNueva = crearAtraccion();
 
     /*Selección de zona*/
-    printf("¿A que zona se agregará la nueva atracción?\n");
+    printf("A que zona se agregará la nueva atracción?\n");
     zona = seleccionDeZona(zonas, pLibreZonas);
 
     /*Agregado de la atraccion nueva a la lista de atracciones*/
@@ -1508,7 +1530,7 @@ void cerrarAtraccion(struct Atraccion *atraccionACerrar, int razon){
     /* cambia el estado y vacia la fila de espera */
     atraccionACerrar -> estado = razon;
     if(razon == 1){
-        printf("¿Vaciar la fila de espera? (1 = Si, 0 = No) \n");
+        printf("Vaciar la fila de espera? (1 = Si, 0 = No) \n");
         scanf("%d", &seleccion);
         while(seleccion < 0 || seleccion > 1) {
             printf("Ingrese una opcion valida\n");
@@ -1789,7 +1811,7 @@ struct Visitante *buscarVisitantePorRutOPorID(struct NodoVisitante *raiz){
     char *input = (char *)malloc(13 * sizeof(char));
     int i, esRut = 0;
 
-    printf("INGRESE RUT (FORMATO 12.345.678-9) O ID\n");
+    printf("Ingrese rut (formato 12.345.678-9) o ID del visitante: \n");
     scanf("%12s", input);
 
     for(i = 0; input[i] != '\0'; i++){
@@ -2002,7 +2024,7 @@ void iniciarAtraccion(struct Atraccion *atraccion){
 
         /* pregunta al usuario si quiere iniciar otro recorrido (solo funcionará si quedan personas en la fila) */
         if(cantidadEnFila(atraccion -> headFila) > 0){
-            printf("¿Iniciar otro recorrido? (1 = Si, 0 = No)\n");
+            printf("Iniciar otro recorrido? (1 = Si, 0 = No)\n");
             scanf("%d", &seleccion);
             while(seleccion < 0 || seleccion > 1 ){
                 printf("Ingrese una opcion valida\n");
@@ -2058,7 +2080,7 @@ void mostrarDatosAtraccion(struct Atraccion *atraccion) {
     printf("Cantidad maxima de personas dentro: %d.\n", atraccion -> capacidad);
     printf("Duracion de su recorrido: %d min.\n", atraccion -> duracion);
     printf("Altura minima para ingresar: %.2f.\n", atraccion->alturaMinima);
-    printf("Edad minima para ingresar: %d años.\n", atraccion -> edadMinima);
+    printf("Edad minima para ingresar: %d anios.\n", atraccion -> edadMinima);
     printf("Visitantes totales: %d.\n", atraccion -> visitantesTotales);
     printf("MayorFilaRegistrada: %d.\n\n", atraccion -> mayorFilaRegistrada);
 }
@@ -2253,7 +2275,7 @@ struct Zona *crearZona(struct Zona **zonas, int pLibreZonas){
     strcpy(zonaNueva -> tematica, buffer);
 
     /* hora de inicio */
-    printf("Ingrese la hora de apertura de la zona\n");
+    printf("Ingrese la hora de apertura de la zona (Formato 23:59) \n");
     fgets(buffer, 100, stdin);
     buffer[strcspn(buffer, "\n")] = '\0';
 
@@ -2266,7 +2288,7 @@ struct Zona *crearZona(struct Zona **zonas, int pLibreZonas){
     strcpy(zonaNueva -> horaInicio, buffer);
 
     /* hora de cierre */
-    printf("Ingrese la hora de cierre de la zona\n");
+    printf("Ingrese la hora de cierre de la zona (Formato 23:59)\n");
     fgets(buffer, 100, stdin);
     buffer[strcspn(buffer, "\n")] = '\0';
 
@@ -2279,7 +2301,7 @@ struct Zona *crearZona(struct Zona **zonas, int pLibreZonas){
     strcpy(zonaNueva -> horaCierre, buffer);
 
     /* capacidad */
-    printf("Ingrese la capacidad estimada de la zona\n");
+    printf("Ingrese la capacidad estimada de la zona \n");
     zonaNueva -> capacidad = inputEntero();
 
     /* valores predeterminados zona*/
@@ -2368,7 +2390,7 @@ void menuModificarAtraccion(struct Zona **zonas, int pLibreZonas){
             case 5:
                 printf("Ingrese nueva edad minima para ingresar\n");
                 cambiarValorNumerico(&(atraccion->edadMinima));
-                printf("Nueva edad minima para ingresar: %d años\n\n", atraccion->edadMinima);
+                printf("Nueva edad minima para ingresar: %d anios\n\n", atraccion->edadMinima);
                 break;
             case 6:
                 if(atraccion -> estado == 2 || atraccion -> estado == 3){
@@ -2436,7 +2458,7 @@ void menuModificarZona(struct Zona *zonaElegida, struct Zona **zonas, int *pLibr
 
 void mostrarMenuZona(struct Parque *IBCLandia){
     int zona, opcionMenu, opcionValida = 1,c;
-    struct Zona *zonaAOperar;
+    struct Zona *zonaAOperar = NULL;
 
     printf("\n ------------------------ \n"
            "Bienvenido al menu de Zonas de IBCLandia\n"
@@ -2454,7 +2476,7 @@ void mostrarMenuZona(struct Parque *IBCLandia){
            "0.- Volver al menu principal. \n");
         printf("Ingrese una opcion del menu: ");
         scanf("%d", &opcionMenu);
-        while ((c=getchar()) != '\n' && c != EOF);
+        while ((c=getchar()) != '\n' && c != EOF) {}
         printf("\n \n");
         if(opcionMenu > 1 && opcionMenu < 7) {
             zona = seleccionDeZona(IBCLandia->zonas, IBCLandia->pLibreZonas);
@@ -2514,12 +2536,12 @@ void mostrarMenuAtracciones(struct Parque *IBCLandia){
         while ((c=getchar()) != '\n' && c != EOF) {}
         printf("\n \n");
         if(opcionMenu == 3 || opcionMenu == 5 || opcionMenu == 6){
-            printf("¿En que zona se encuentra la atraccion a usar?");
+            printf("En que zona se encuentra la atraccion a usar?");
             zona = seleccionDeZona(IBCLandia->zonas, IBCLandia->pLibreZonas);
             atraccionElegida = seleccionDeAtraccion(IBCLandia->zonas[zona]->headAtracciones);
             if(atraccionElegida == NULL) opcionValida = 0;
         }else if(opcionMenu == 2 || opcionMenu == 4){
-            printf("¿En que zona se encuentra la atraccion a usar?");
+            printf("En que zona se encuentra la atraccion a usar?");
             zona = seleccionDeZona(IBCLandia->zonas, IBCLandia->pLibreZonas);
             atraccionElegida = seleccionarAtraccion(IBCLandia->zonas[zona]->headAtracciones);
             if(atraccionElegida == NULL) opcionValida = 0;
@@ -2571,7 +2593,7 @@ void mostrarDatosVisitante(struct Visitante *visitanteDatos) {
     printf("ID: %d \n",visitanteDatos->idVisitante);
     printf("Nombre: %s \n", visitanteDatos->nombre);
     printf("Altura: %f metros \n",visitanteDatos->altura);
-    printf("Edad: %d años \n", visitanteDatos->edad);
+    printf("Edad: %d anios \n", visitanteDatos->edad);
     printf("RUT: %s \n",visitanteDatos->rut);
     if (visitanteDatos->zonaActual == NULL) printf("El visitante no esta en el parque actualmente. \n");
     else printf("Zona actual del visitante: %s. \n",visitanteDatos->zonaActual->nombre);
@@ -2586,7 +2608,7 @@ void mostrarMenuVisitante(struct Parque *IBCLandia ) {
            "------------------------\n \n");
     do {
         opcionValida=1;
-        printf("Operaciones posibles: \n"
+        printf("\nOperaciones posibles: \n"
            "1.- Registrar nuevo visitante en el sistema. \n"
            "2.- Modificar datos de un visitante en el sistema. \n"
            "3.- Eliminar visitante del sistema. \n"
@@ -2654,12 +2676,12 @@ void mostrarMenuEntradas(struct Parque *IBCLandia) {
            "Bienvenido al menu de Entradas de IBCLandia\n"
            "------------------------\n \n");
     do {
-        printf("Operaciones posibles: \n"
+        printf("\nOperaciones posibles: \n"
             "1.- Vender entrada a visitante. \n"
             "2.- Modificar entrada en el sistema. \n"
             "3.- Eliminar entrada del sistema. \n"
             "4.- Mostrar datos de entrada en el sistema. \n"
-            "0.- Salir del menu de entradas. \n"
+            "0.- Volver al menu principal. \n"
             "Ingrese una opcion del menu: ");
         scanf("%d",&opcionMenu);
         while ((c=getchar()) != '\n' && c != EOF) {}
@@ -2708,6 +2730,184 @@ void mostrarMenuEntradas(struct Parque *IBCLandia) {
 
 }
 
+void mostrarMenuReportes(struct Parque *IBCLandia) {
+    int opcionMenu, opcionValida = 1, c, i;
+    struct ReporteZona **reporteZona = NULL;
+    struct Visitante **visitantesEnParque = NULL;
+    struct Atraccion *atraccionMasVisitada;
+    printf("\n ------------------------ \n"
+           "Bienvenido al menu de Reportes de IBCLandia\n"
+           "------------------------\n \n");
+    do {
+        opcionValida = 1;
+        printf("\nOperaciones posibles: \n"
+            "1.- Mostrar ocupacion actual y maxima del dia del parque. \n"
+            "2.- Mostrar ocupacion detallada de cada zona. \n"
+            "3.- Mostrar dinero recaudado en el dia de hoy. \n"
+            "4.- Mostrar visitantes unicos ingresados hoy. \n"
+            "5.- Mostrar las atracciones con mayor fila de espera. \n"
+            "6.- Mostrar las zonas mas concurridas. \n"
+            "7.- Mostrar visitantes que estan dentro del parque. \n"
+            "8.- Mostrar atraccion con mas visitantes hoy. \n"
+            "0.- Volver al menu principal. \n"
+            "Ingrese una opcion del menu: ");
+        scanf("%d",&opcionMenu);
+        while ((c=getchar()) != '\n' && c != EOF) {}
+        printf("\n \n");
+        switch (opcionMenu) {
+            case 1:
+                printf("Ocupacion general del parque: \n");
+                printf("Visitantes actualmente dentro del parque: %d.\n",IBCLandia->ocupacionActual);
+                printf("Ocupacion maxima alcanzada hoy: %d. \n\n",IBCLandia->ocupacionMaximaDiaria);
+                break;
+            case 2:
+                printf("Ocupacion en cada zona: \n");
+                for (i = 0; i<IBCLandia->pLibreZonas;i++) {
+                    consultarCantidadVisitantesPorZona(IBCLandia->zonas[i]);
+                }
+                printf("\n\n");
+                break;
+            case 3:
+                printf("Mostrando dinero recaudado hoy %s: %d",fechaActual,obtenerDineroRecaudadoEnElDia(IBCLandia->headVisitantes));
+                break;
+            case 4:
+                printf("Visitantes unicos ingresados hoy: %d", contarVisitantesUnicosIngresadosHoy(IBCLandia->headVisitantes));
+                break;
+            case 5:
+                printf("Atracciones con mayor fila de espera: \n");
+                mostrarAtraccionesPorMayorFilaDeEspera(IBCLandia);
+                break;
+            case 6:
+                printf("Zonas con mas cantidad de visitantes (de mayor a menor): \n");
+                reporteZona = obtenerArregloReporteZonaMayorAMenor(IBCLandia);
+                if (reporteZona!= NULL) {
+                    for (i = 0; i<IBCLandia->pLibreZonas;i++) {
+                        printf("%d.- %s | %d visitantes. \n", i,reporteZona[i]->datosZona->nombre, reporteZona[i]->TotalPersonas);
+                        free(reporteZona[i]);
+                    }
+                    free(reporteZona);
+                }else printf("No hay zonas en el parque. \n");
+                break;
+            case 7:
+                printf("Mostrando visitantes actualmente en el parque: \n");
+                visitantesEnParque = obtenerArregloVisitantesDentroDelParque(IBCLandia);
+                if (visitantesEnParque!=NULL) {
+                    for (i = 0; i<IBCLandia->ocupacionActual;i++) {
+                        printf("%d.- %s",i,visitantesEnParque[i]->nombre);
+                    }
+                } else printf("No hay visitantes en el parque. \n");
+
+                break;
+            case 8:
+                printf("Atracciones con mas visitantes: %s \n",fechaActual);
+                atraccionMasVisitada = obtenerAtraccionMasVisitantesTotalEnParque(IBCLandia->zonas, IBCLandia->pLibreZonas);
+                if (atraccionMasVisitada != NULL) printf("%s | %d visitas totales. \n\n", atraccionMasVisitada->nombre,
+                                                         atraccionMasVisitada->visitantesTotales);
+                else printf("No hay atracciones en el parque. \n\n");
+                break;
+            case 0:
+                break;
+            default:
+                opcionValida=0;
+        }
+        if (opcionValida == 0) printf("Ingresa una opcion valida. \n \n");
+    }while (opcionMenu != 0);
+}
+
+/*nota, funciones que me sirven para cerrar el parque:*/
+/*obtenerArregloVisitantesDentroDelParque(struct Parque *IbcLandia) retorna un arreglo dinamico de los visitantes que siguen adentro*/
+/*sacarVisitanteDelParque(struct Parque *IBCLandia, int idVisitanteSalir) cambia el estado del visitante */
+/*cerrarAtraccion(struct Atraccion *atraccionACerrar, int razon) cierra filas, cambia estado de la atracción*/
+
+void cerrarParque (struct Parque *IbcLandia) {
+    int i;
+    int cantidadVisitantes;
+    struct Visitante **EnParque = NULL;
+    struct NodoAtraccion *cerrar = NULL;
+
+    if (IbcLandia == NULL) {
+        printf("Error con el parque.\n");
+        return;
+    }
+
+
+
+    /*Cerrar atracciones para sacar a los visitantes*/
+
+    for (i = 0; i < IbcLandia->pLibreZonas; i++) {
+        if (IbcLandia->zonas[i] != NULL) {
+            cerrar = IbcLandia->zonas[i]->headAtracciones ->sig;
+            while (cerrar != NULL) {
+                cerrarAtraccion(cerrar->datos, 3);
+                cerrar = cerrar->sig;
+            }
+        }
+    }
+
+    printf("Atracciones cerradas con exito, ");
+
+    /*sacar a la gente*/
+    EnParque = obtenerArregloVisitantesDentroDelParque(IbcLandia);
+    cantidadVisitantes = IbcLandia->ocupacionActual;
+
+    if (cantidadVisitantes == 0 ) {
+        printf("no habian visitantes dentro del parque.\n");
+    }
+
+    for (i = 0; i < cantidadVisitantes; i++) {
+        sacarVisitanteDelParqueNoPrints(IbcLandia, EnParque[i]->idVisitante);
+    }
+
+    if (EnParque != NULL) {
+        free(EnParque);
+    }
+
+    if (IbcLandia->ocupacionActual >= 0) {
+        printf("Error al sacar visitantes.\n");
+        return;
+    }else if (cantidadVisitantes > 0) {
+        printf("todos los visitantes salieron del parque.\n");
+    }
+
+
+    printf("parque cerrado con exito! \n");
+
+}
+
+void abrirParque (struct Parque *IbcLandia) {
+    int i;
+    struct NodoAtraccion *rec = NULL;
+    if (IbcLandia == NULL) {
+        printf("Error con el parque.\n");
+        return;
+    }
+
+    IbcLandia->ocupacionMaximaDiaria = 0;
+
+    for (i = 0; i < IbcLandia->pLibreZonas; i++) {
+        if (IbcLandia->zonas[i] != NULL) {
+
+            IbcLandia->zonas[i]->ocupacionHistorica = 0;
+            rec = IbcLandia->zonas[i]->headAtracciones->sig;
+
+            while (rec != NULL) {
+
+                if (rec->datos->estado == 3) {
+                    rec->datos->estado = 0;
+                }
+
+                rec->datos->mayorFilaRegistrada = 0;
+
+                rec = rec->sig;
+            }
+
+        }
+    }
+
+    printf("Parque abierto con exito! \n");
+
+}
+
 
 void cargarDatosPrueba(struct Parque *IBCLandia) {
     struct Atraccion *a1;
@@ -2719,8 +2919,13 @@ void cargarDatosPrueba(struct Parque *IBCLandia) {
     struct Entrada *e1;
     struct NodoEntrada *ne1;
 
-    /* 1. Inicializar fecha actual */
-    strcpy(fechaActual, "31/05/2026");
+
+    IBCLandia->zonas = NULL;
+    IBCLandia->pLibreZonas = 0;
+    IBCLandia->headVisitantes = NULL;
+    IBCLandia->ocupacionActual = 0;
+    IBCLandia->ocupacionMaximaDiaria = 0;
+    IBCLandia->recaudacionTotal = 0;
 
     /* 2. Inicializar Zonas */
     IBCLandia->pLibreZonas = 2;
@@ -2813,27 +3018,45 @@ void cargarDatosPrueba(struct Parque *IBCLandia) {
 }
 
 int main(void) {
-    int opcionMenu, c;
+    int opcionMenu, flagoAbierto = 0,c;
     struct Parque *IBCLandia = malloc(sizeof(struct Parque));
-    cargarDatosPrueba(IBCLandia);
-    /* IBCLandia->zonas = NULL;
-    IBCLandia->pLibreZonas = 0;
-    IBCLandia->headVisitantes = NULL;
-    IBCLandia->ocupacionActual = 0;
-    IBCLandia->ocupacionMaximaDiaria = 0;
-    IBCLandia->recaudacionTotal = 0;*/
+    time_t fechaSistema = time(NULL);
+    struct tm *fechaActualTime = localtime(&fechaSistema);
+
+    do {
+        printf("Desea cargar datos de prueba? \n");
+        printf("1.- Si (2 zonas, 2 atracciones por zona, 4 visitantes y 3 entradas seran cargados en el sistema) \n");
+        printf("0.- No (El parque comenzara vacio) \n");
+        printf("Ingrese opcion deseada: ");
+        scanf("%d", &opcionMenu);
+        if (opcionMenu>1 || opcionMenu<0) printf("Ingrese una opcion valida. \n \n");
+    }while (opcionMenu>1 || opcionMenu<0);
+    if (opcionMenu) cargarDatosPrueba(IBCLandia);
+    else {
+        IBCLandia->zonas = NULL;
+        IBCLandia->pLibreZonas = 0;
+        IBCLandia->headVisitantes = NULL;
+        IBCLandia->ocupacionActual = 0;
+        IBCLandia->ocupacionMaximaDiaria = 0;
+        IBCLandia->recaudacionTotal = 0;
+    }
+
     opcionMenu = 1;
-    srand(time(NULL)); /*Establece la semilla para la funcion rand(), para que cambien sus resultados en cada ejecucion del programa*/
-
-
+    srand(fechaSistema); /*Establece la semilla para la funcion rand(), para que cambien sus resultados en cada ejecucion del programa*/
+    sprintf(fechaActual,"%02d/%02d/%04d", fechaActualTime->tm_mday, (fechaActualTime->tm_mon+1), (fechaActualTime->tm_year + 1900));
+    printf("\n\n");
 
     while (opcionMenu != 0){
-        printf("Bienvenido al menu de IBCLandia\n");
-        printf("1.- Menu de visitantes\n");
-        printf("2.- Menu de entradas \n");
-        printf("3.- Menu de atracciones\n");
-        printf("4.- Menu de zonas\n");
-        printf("5.- Menu de datos\n");
+        printf("\n------------------------\n");
+        printf("Bienvenido al menu principal de IBCLandia\n");
+        printf("------------------------\n \n");
+        printf("1.- Menu de visitantes.\n");
+        printf("2.- Menu de entradas. \n");
+        printf("3.- Menu de atracciones.\n");
+        printf("4.- Menu de zonas.\n");
+        printf("5.- Menu de datos.\n");
+        printf("6.- Abrir parque.\n");
+        printf("7.- Cerrar parque. \n");
         printf("0.- Cerrar programa");
         printf("\n");
         printf("Ingrese operacion deseada: ");
@@ -2848,6 +3071,21 @@ int main(void) {
             case 2:
                 mostrarMenuEntradas(IBCLandia);
                 break;
+            case 3:
+                mostrarMenuAtracciones(IBCLandia);
+                break;
+            case 4:
+                mostrarMenuZona(IBCLandia);
+                break;
+            case 5:
+                mostrarMenuReportes(IBCLandia);
+                break;
+            case 6:
+                abrirParque(IBCLandia);
+                break;
+            case 7:
+                cerrarParque(IBCLandia);
+                break;
             case 0:
                 break;
             default:
@@ -2856,8 +3094,16 @@ int main(void) {
 
         }
     printf("\n------------------------\n");
-    printf("Cerrando programa. ¡Que tengas un dia IBCtastico!\n");
-    printf("------------------------\n");
+    printf("Cerrando programa. Que tengas un dia IBCtastico!\n");
+    printf("------------------------\n \n");
+
+
+
+    printf("### ####   ###  #      ###  #   # ####  ###  ###  \n");
+    printf(" #  #   # #     #     #   # ##  # #   #  #  #   # \n");
+    printf(" #  ####  #     #     ##### # # # #   #  #  ##### \n");
+    printf(" #  #   # #     #     #   # #  ## #   #  #  #   # \n");
+    printf("### ####   ###  ##### #   # #   # ####  ### #   # \n");
     free(IBCLandia);
     return 0;
 }
