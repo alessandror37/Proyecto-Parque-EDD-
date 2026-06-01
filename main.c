@@ -6,7 +6,7 @@
 
 #define CAPACIDAD_MAX 100
 #define MAX_ID_VISITANTES 100000 /*sintaxis para la generacion de id: id = rand() % (MAX_ID_VISITANTES + 1)*/
-char fechaActual[10];
+char fechaActual[11];
 int recaudacionEntradas[4]; /*En cada elemento del array se guarda la recaudacion en su respectivo estado
 Ej: un visitante compra una entrada general, entonces se realiza recaudacionEntradas[entrada->tipo] += entrada->valor*/
 int valorEntradas[4] = {22990,10990,0,44990}; /*En cada elemento del array se guarda el valor de la entrada con su respectivo tipo
@@ -226,21 +226,28 @@ struct Visitante *crearVisitante(struct NodoVisitante *raiz) {
 
     /*Se le asigna memoria a los chars, el programa asume que no se ingresará un nombre de más de 50 caracteres*/
     visitanteNuevo->nombre = malloc(sizeof(char)*50);
-    visitanteNuevo->rut = malloc(sizeof(char)*12);
+    visitanteNuevo->rut = malloc(sizeof(char)*13);
 
     /*Se pide el input al usuario de los datos*/
     printf("Ingresar nombre completo del visitante: ");
     fgets(visitanteNuevo->nombre,50, stdin);
-
+    printf("\n");
     printf("Ingresar rut del visitante: ");
     fgets(visitanteNuevo->rut,12, stdin);
+    printf("\n");
+    printf("Ingresar edad del visitante: ");
+    scanf("%d", &visitanteNuevo->edad);
+    printf("\n");
+    printf("Ingresar altura del visitante(en metros): ");
+    scanf("%f", &visitanteNuevo->altura);
 
 
     /*Inicialización de datos fijos que no requieren input del usuario*/
     visitanteNuevo->boolEstaEnParque = 0;
     visitanteNuevo->zonaActual = NULL;
     visitanteNuevo->headEntradas = malloc(sizeof(struct NodoEntrada));
-    visitanteNuevo->headEntradas->sig = NULL;
+    visitanteNuevo->headEntradas->datos = NULL;
+    visitanteNuevo->headEntradas->sig= NULL;
 
     return visitanteNuevo;
 }
@@ -399,18 +406,57 @@ void eliminarVisitanteDeArbol(struct NodoVisitante **raiz, int idVisitanteElimin
     }
 }
 
-/*Funcion recursiva que cuenta la cantidad de visitantes en el parque al momento de ejecutarse*/
-int contarVisitantesEnParque(struct NodoVisitante *raiz) {
-    int cont = 0;
-
-    if (raiz == NULL) {
-        return 0;
+void menuModificarVisitante(struct Zona **zonas,int pLibreZonas,struct Visitante *visitanteModificar) {
+    int opcionModificar, c;
+    if (visitanteModificar == NULL) {
+        printf("\n");
+        printf("ERROR: No existe el visitante al que se quiere modificar");
+        return;
     }
-    cont += contarVisitantesEnParque(raiz->izq);
-    cont += contarVisitantesEnParque(raiz->der);
 
-    return cont + raiz->datos->boolEstaEnParque;
+    printf("Bienvenido al menu de modificacion de Visitante. \n");
+    printf("1.- Modificar nombre. \n");
+    printf("2.- Modificar altura. \n");
+    printf("3.- Modificar edad. \n");
+    printf("0.- Salir del menu modificar visitante. \n");
+    do {
+        printf("Ingrese una opcion: ");
+        scanf("%d", &opcionModificar);
+        printf("\n");
+        switch (opcionModificar) {
+            case 1:
+                printf("Nombre registrado: %s \n", visitanteModificar->nombre);
+                printf("Ingrese nuevo nombre: ");
+
+                while ((c = getchar()) != '\n' && c != EOF);
+                fgets(visitanteModificar->nombre,50, stdin);
+                printf("\n");
+                printf("Nuevo nombre registrado: %s \n", visitanteModificar->nombre);
+                break;
+            case 2:
+                printf("Altura registrada: %f \n", visitanteModificar->altura);
+                printf("Ingrese nueva altura: ");
+                scanf("%f",&visitanteModificar->altura);
+                printf("\n");
+                printf("Nueva altura registrada: %f \n", visitanteModificar->altura);
+                break;
+            case 3:
+                printf("Edad registrada: %d \n", visitanteModificar->edad);
+                printf("Ingrese nueva edad: ");
+                scanf("%d", &visitanteModificar->edad);
+                printf("\n");
+                printf("Nueva edad actual registrada: %d", visitanteModificar->edad);
+                break;
+            case 0:
+                printf("Saliendo del menu modificar visitante... \n");
+                break;
+            default:
+                printf("Ingrese una opcion valida. \n");
+                break;
+        }
+    }while (opcionModificar != 0);
 }
+
 
 /*Esta función recorre la lista simplemente enlazada del visitante y retorna puntero a la entrada si se encontró por id
  * o retorna NULL si no se encontró
@@ -469,7 +515,7 @@ struct Entrada *crearEntrada(struct NodoVisitante *raiz, int tipoEntrada) {
     entradaNueva->tipo = tipoEntrada;
     entradaNueva->estado = 0;
     entradaNueva->valor = valorEntradas[tipoEntrada];
-    entradaNueva->fechaUsada = fechaActual;
+    entradaNueva->fechaUsada = NULL;
     if (tipoEntrada == 2){
         entradaNueva->usosFamiliar[0] = 2;
         entradaNueva->usosFamiliar[1] = 2;
@@ -568,6 +614,13 @@ void comprarEntradaVisitante(struct NodoVisitante *raiz,struct Visitante *visita
 
 }
 
+int flagEntradaFamiliarUsada(struct Entrada *entrada) {
+    if (entrada->usosFamiliar[0] == 0 && entrada->usosFamiliar[1] == 0) {
+        return 1;
+    }
+    return 0;
+}
+
 /*Funcion que valida la entrada del visitante.
  * esta funcion no tendra interaccion con el usuario
  * retorna un valor dependiendo del exito/error de la operacion
@@ -605,6 +658,7 @@ int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
                 if (alturaVisitante>=1.4) {
                     if (entradaVisitante->usosFamiliar[0]>0) {
                         entradaVisitante->usosFamiliar[0]--;
+                        if (flagEntradaFamiliarUsada(entradaVisitante)) entradaVisitante->estado = 1;
                         return 1;
                     }
                     return 3;
@@ -612,6 +666,7 @@ int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
 
                 if (entradaVisitante->usosFamiliar[1]>0) {
                     entradaVisitante->usosFamiliar[1]--;
+                    if (flagEntradaFamiliarUsada(entradaVisitante)) entradaVisitante->estado = 1;
                     return 1;
                 }
                 return 4;
@@ -623,6 +678,80 @@ int validarEntradaVisitante(struct Visitante *visitante, int idEntrada) {
     }
     return 6;
 }
+
+void eliminarEntradaVisitante(struct NodoEntrada *headEntradas, int idEntradaEliminar) {
+    struct NodoEntrada *rec = NULL, *nodoAnterior,*nodoEliminar;
+    rec = headEntradas->sig;
+    nodoAnterior = headEntradas;
+    while (rec!=NULL) {
+        if (rec->datos->idEntrada == idEntradaEliminar) {
+            nodoEliminar= rec;
+            nodoAnterior->sig=nodoEliminar->sig;
+            free(nodoEliminar->datos);
+            free(nodoEliminar);
+            return;
+        }
+        rec= rec->sig;
+        nodoAnterior=nodoAnterior->sig;
+    }
+}
+
+void menuModificarEntrada(struct NodoEntrada *headEntradas,struct Entrada *entradaModificar) {
+    int opcionModificar, opcionValida, estadoNuevo,opcionBorrar;
+    if (entradaModificar == NULL) {
+        printf("\n");
+        printf("ERROR: No existe la entrada que se quiere modificar");
+        return;
+    }
+    printf("Bienvenido al menu de modificacion de Entrada. \n");
+    printf("1.- Modificar estado entrada. \n");
+    printf("0.- Salir del menu modificar entrada. \n");
+    do {
+        opcionValida = 0;
+        printf("Ingrese una opcion del menu: ");
+        scanf("%d", &opcionModificar);
+        printf("\n");
+        if (opcionModificar) {
+            switch (entradaModificar->estado) {
+                case 0:
+                    printf("Estado actual entrada: Activa \n");
+                    printf("Ingrese nuevo estado (2 -> Anulada, 3 -> Vencida): ");
+                    do {
+                        scanf("%d", &estadoNuevo);
+                        if (estadoNuevo <2 || estadoNuevo>3) {
+                            printf("ERROR: Ingrese un estado valido: ");
+                        } else opcionValida =1;
+                    }while (opcionValida!= 1);
+                    entradaModificar->estado = estadoNuevo;
+                    printf("Estado entrada actualizado correctamente.");
+                    break;
+                case 1:
+                case 2:
+                case 3:
+                    printf("No se puede modificar una entrada ya usada/vencida/anulada! Desea eliminar entrada del sistema? \n");
+                    printf("1.- Si \n");
+                    printf("2.- No \n");
+                    do {
+                        scanf("%d", &opcionBorrar);
+                        if (opcionBorrar > 2 || opcionBorrar<1) {
+                            printf("ERROR: Ingrese una opcion valida: ");
+                        } else opcionValida =1;
+                    }while (opcionValida!= 1);
+                    if (opcionBorrar == 1) {
+                        eliminarEntradaVisitante(headEntradas,entradaModificar->idEntrada);
+                        printf("Entrada eliminada correctamente. \n");
+                        opcionModificar = 0;
+                    }
+                    break;
+                default:
+                    ;
+
+            }
+        }
+    }while (opcionModificar != 0);
+    printf("Cerrando menu modificar entrada... \n");
+}
+
 
 void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar) {
     int idEntradaVisitante,resultadoOperacionValidar;
@@ -647,8 +776,10 @@ void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar
         case 1:
             printf("¡Operacion realizada con exito! Ingresando visitante al parque. \n");
             visitanteIngresar->zonaActual = IBCLandia->zonas[0];
+            visitanteIngresar->boolEstaEnParque = 1;
             IBCLandia->ocupacionActual++;
-            IBCLandia->ocupacionMaximaDiaria++;
+            if (IBCLandia->ocupacionActual>IBCLandia->ocupacionMaximaDiaria) IBCLandia->ocupacionMaximaDiaria = IBCLandia->ocupacionActual;
+            entradaVisitanteIngresar->fechaUsada = fechaActual;
             return;
         case 2:
             printf("ERROR: La altura del visitante no coincide con el tipo de entrada que se esta intentando usar \n");
@@ -670,9 +801,14 @@ void ingresarVisitanteAlParque(struct Parque *IBCLandia, int idVisitanteIngresar
             case 3:
                     printf("ERROR: La entrada esta vencida. \n");
                     return;
+            default:
+                    ;
             }
+
         case 6:
             printf("ERROR: No se pudo completar la operacion. \n");
+        default:
+            ;
     }
 }
 
@@ -702,7 +838,7 @@ void sacarVisitanteDelParque(struct Parque *IBCLandia,int idVisitanteSalir) {
 /*Retorna un arreglo dinamico de punteros a las atracciones NO OPERATIVAS*/
 
  /*esta funcion recorre las atracciones de una zona y cuenta cuantas estan NO operativas*/
-int NoOperativasEnZona (struct NodoAtraccion *headAtracciones) {
+int contarAtraccionesNoOperativasEnZona (struct NodoAtraccion *headAtracciones) {
     int contador = 0;
     struct NodoAtraccion *rec = headAtracciones->sig;
 
@@ -717,7 +853,7 @@ int NoOperativasEnZona (struct NodoAtraccion *headAtracciones) {
     return contador;
 }
 /*esta funcion cuenta las NO operativas por zona*/
-int contarNoOperativas (struct Zona ** zonas, int plibre) {
+int contarAtraccionesNoOperativasEnParque (struct Zona ** zonas, int plibre) {
     int contador = 0;
     int i;
 
@@ -725,22 +861,22 @@ int contarNoOperativas (struct Zona ** zonas, int plibre) {
     for (i = 0; i < plibre; i++) {
         if(zonas[i] != NULL) {
             /*Cuenta las NO operativas en la zona actual del recorrido y las suma al contador*/
-            contador+= NoOperativasEnZona(zonas[i]->headAtracciones);
+            contador+= contarAtraccionesNoOperativasEnZona(zonas[i]->headAtracciones);
         }
     }
 
     return contador;
 }
 
-//*retorna un arreglo dinamico de punteros con las atracciones NO operatiivas*//
-struct Atraccion ** NoOperativas (struct Zona ** zonas, int plibre) {
+/*retorna un arreglo dinamico de punteros con las atracciones NO operatiivas*/
+struct Atraccion ** obtenerArregloAtraccionesNoOperativas (struct Zona ** zonas, int plibre) {
     struct Atraccion ** ArregloNoOperativas;
     int cantidadNoOperativas; /*contador para el malloc*/
     int i;
     int posicion = 0;
     struct NodoAtraccion *rec = NULL;
 
-    cantidadNoOperativas = contarNoOperativas(zonas, plibre);
+    cantidadNoOperativas = contarAtraccionesNoOperativasEnParque(zonas, plibre);
     if (cantidadNoOperativas == 0) return NULL;
 
     ArregloNoOperativas = (struct Atraccion **)malloc(cantidadNoOperativas * sizeof (struct Atraccion *));
@@ -767,12 +903,12 @@ struct Atraccion ** NoOperativas (struct Zona ** zonas, int plibre) {
 /*Qué visitantes siguen dentro del parque*/
 
 /*recorre el arbol de visitantes y agrega al arreglo las que tengan el boolEstaEnParque en 1*/
-void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visitante ** arreglo, int *posicion) {
+void recorrerArbolAnadiendoAuxiliar (struct NodoVisitante *headVisitantes, struct Visitante ** arreglo, int *posicion) {
     struct Visitante *datos;
     if (headVisitantes == NULL) return;
     datos = headVisitantes->datos;
     /*de forma recursiva agrega las de la izquerda primero para mantener un orden (si es que el arbol llega a estar ordenado no se)*/
-    RecorrerArbolAnadiendo(headVisitantes->izq,arreglo,posicion);
+    recorrerArbolAnadiendoAuxiliar(headVisitantes->izq,arreglo,posicion);
 
 
     if (datos->boolEstaEnParque == 1) {
@@ -781,24 +917,24 @@ void RecorrerArbolAnadiendo (struct NodoVisitante *headVisitantes, struct Visita
     }
 
     /*de forma recursiva agrega las de la deerecha*/
-    RecorrerArbolAnadiendo(headVisitantes->der,arreglo,posicion);
+    recorrerArbolAnadiendoAuxiliar(headVisitantes->der,arreglo,posicion);
 
 }
 
-struct Visitante **DentroDelParque (struct Parque *IbcLandia) {
+struct Visitante **obtenerArregloVisitantesDentroDelParque (struct Parque *IbcLandia) {
     struct Visitante ** VisitantesEnElParque;
     int contador; /*contador para el malloc*/
     int posicion = 0;/*contador de posicion para el arreglo, se le pasa a la función que recorre el arbol para que sepa en que posición poner al visitante*/
 
     if (IbcLandia == NULL) return NULL;
 
-    contador = contarVisitantesEnParque (IbcLandia->headVisitantes);
+    contador = IbcLandia->ocupacionActual;
 
     if (contador == 0) return NULL;
 
     VisitantesEnElParque = (struct Visitante **) malloc (contador * sizeof (struct Visitante *));
     /*agrega mientras modifica la posicion en la que debe ser agregado*/
-    RecorrerArbolAnadiendo(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
+    recorrerArbolAnadiendoAuxiliar(IbcLandia->headVisitantes,VisitantesEnElParque,&posicion);
 
     return VisitantesEnElParque;
 
@@ -845,7 +981,7 @@ struct Atraccion *atraccionConMasEspera (struct NodoAtraccion *headAtracciones, 
     return MayorFila;
 }
 /*retorna la atraccion con mayor fila en ese momento*/
-struct Atraccion *AtraccionMayorFilaEntreZonas(struct Zona ** zonas, int plibre ) {
+struct Atraccion *obtenerAtraccionMayorFilaEntreZonas(struct Zona ** zonas, int plibre ) {
     struct Atraccion *atraccionCampeonaGlobal = NULL; /*la atraccion con mayor fila entre todas las zonas, se actualiza si es superada*/
     struct Atraccion *atraccionCandidataZona = NULL; /*atraccion con mas fila dee una zona, see compara con la campeonaMundial y se remplaza si la supera*/
     int i, cantidadEnFilaMayor = 0;
@@ -869,7 +1005,7 @@ struct Atraccion *AtraccionMayorFilaEntreZonas(struct Zona ** zonas, int plibre 
 /*cuantas entradas se utilizaron ese dia comparar con fecha actual global*/
 
 /*cuenta la cantidad de entradas utilizadas ese dia en las entradas de un visitante*/
-int cantidadDeEntradasDiaria (struct NodoEntrada *nodoEntrada) {
+int contarEntradasUsadasHoyVisitante (struct NodoEntrada *nodoEntrada) {
     int contador = 0;
     struct NodoEntrada *rec;
 
@@ -887,7 +1023,7 @@ int cantidadDeEntradasDiaria (struct NodoEntrada *nodoEntrada) {
     return contador;
 }
 /*cuenta todas las entradas del dia entre todos los visitantes, recursivamente recorre el arbol*/
-int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
+int contarCantidadDeEntradasUsadasHoyEnArbol (struct NodoVisitante *headVisitantes){
     int contador = 0;
     struct Visitante *actual;
 
@@ -895,10 +1031,10 @@ int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
 
     actual = headVisitantes->datos;
     /*suma la cantidad de entradas del dia pertenecientes a ese visitante*/
-    contador += cantidadDeEntradasDiaria(actual->headEntradas);
+    contador += contarEntradasUsadasHoyVisitante(actual->headEntradas);
     /*recorre la izquerda y la deerecha sumando al contador las entradas que cumplen*/
-    contador += cantidadDeEntradasEnArbol(headVisitantes->izq);
-    contador += cantidadDeEntradasEnArbol(headVisitantes->der);
+    contador += contarCantidadDeEntradasUsadasHoyEnArbol(headVisitantes->izq);
+    contador += contarCantidadDeEntradasUsadasHoyEnArbol(headVisitantes->der);
 
     return contador;
 
@@ -907,7 +1043,7 @@ int cantidadDeEntradasEnArbol (struct NodoVisitante *headVisitantes){
 
 /*retorna la atraccion con mas visitantes totales usando la variable VisitantesTotales dentro de cada atraccion*/
     /*la gracia de que retorne la atraccion es ir comparando la mejor de esa zona con la mejor de otras zonas*/
-struct Atraccion *MasVisitantesTotales (struct NodoAtraccion *headAtracciones) {
+struct Atraccion *obtenerAtraccionMasVisitantesTotalesEnZona (struct NodoAtraccion *headAtracciones) {
     struct NodoAtraccion *rec;
     struct Atraccion * masVisitantes = NULL;
     int visitantesAnterior = 0;
@@ -930,7 +1066,7 @@ struct Atraccion *MasVisitantesTotales (struct NodoAtraccion *headAtracciones) {
 }
 
 /*recorre las zonas y retorna la atraccion mas visitada entre todas las zonas*/
-struct Atraccion *AtracccionMasVisitadaEntreZonas (struct Zona ** zonas, int plibre ) {
+struct Atraccion *obtenerAtraccionMasVisitantesTotalEnParque (struct Zona ** zonas, int plibre ) {
     struct Atraccion *AtraccionConMasVisitantesTotales = NULL; /*aca se almacena el record entre todas las zonas*/
     struct Atraccion *candidato= NULL;/*candidato corresponde a la atraccion mas visitada de una zona, si es mayor al record se reemplaza*/
     int i;
@@ -939,7 +1075,7 @@ struct Atraccion *AtracccionMasVisitadaEntreZonas (struct Zona ** zonas, int pli
     /*recorre las zonas*/
     for (i = 0; i < plibre; i++) {
         /*retorna la atraccion mas visitada de la zona*/
-        candidato = MasVisitantesTotales(zonas[i]->headAtracciones);
+        candidato = obtenerAtraccionMasVisitantesTotalesEnZona(zonas[i]->headAtracciones);
         /*si retorna null significa que la zona no tiene atracciones, si las tiene no retornara null*/
         if (candidato != NULL) {
             /*si no hay record o si el candidato supera el record actual se remplaza*/
@@ -961,7 +1097,7 @@ struct Atraccion *AtracccionMasVisitadaEntreZonas (struct Zona ** zonas, int pli
     int TotalPersonas;
 };
 /*cuenta la cantidad de personas en la zona perteneciente al codigo ingresado, recorre el arbol recursivamente buscando ese codigo*/
-int TotalPersonasEnZona (struct NodoVisitante * headVisitantes, int codigoBuscado) {
+int contarPersonasEnZona (struct NodoVisitante * headVisitantes, int codigoBuscado) {
     int contador = 0;
     struct Visitante *actual;
 
@@ -974,13 +1110,13 @@ int TotalPersonasEnZona (struct NodoVisitante * headVisitantes, int codigoBuscad
         contador++;
     }
     /*de forma recursiva se le suma al contador analizando las personas de la izquerda y derecha*/
-    contador+= TotalPersonasEnZona(headVisitantes->izq,codigoBuscado);
-    contador += TotalPersonasEnZona(headVisitantes->der, codigoBuscado);
+    contador+= contarPersonasEnZona(headVisitantes->izq,codigoBuscado);
+    contador += contarPersonasEnZona(headVisitantes->der, codigoBuscado);
 
     return contador;
 }
     /*ordena el arreglo dinamico de tipo ReporteZona de mayor a menor con un bubble sort*/
-    void OrdenarZonasMasOcupadas (struct ReporteZona ** reporte, int tam) {
+void ordenarArregloReporteZonaMayorAMenor (struct ReporteZona ** reporte, int tam) {
     int i;
     int j;
 
@@ -1000,7 +1136,8 @@ int TotalPersonasEnZona (struct NodoVisitante * headVisitantes, int codigoBuscad
     }
 }
 /*crea un arreglo dinamico de punteros de tipo ReporteZona, este guarda todas las zonas y el total de personas en esa zona*/
-struct ReporteZona ** ArregloReporteZona(struct Parque *IBCLandia) {
+/*funcion que llama a esta funcion debe realizar free*/
+struct ReporteZona ** obtenerArregloReporteZonaMayorAMenor(struct Parque *IBCLandia) {
     struct ReporteZona **reporte;
     int tam = IBCLandia->pLibreZonas;
     int i;
@@ -1012,10 +1149,10 @@ struct ReporteZona ** ArregloReporteZona(struct Parque *IBCLandia) {
         reporte[i] = (struct ReporteZona *) malloc(sizeof(struct ReporteZona));
         /*se rellena el struct ReporteZona para cada uno dentro del arreglo*/
         reporte[i]->datosZona = IBCLandia->zonas[i];
-        reporte[i]->TotalPersonas =TotalPersonasEnZona(IBCLandia->headVisitantes,IBCLandia->zonas[i]->codigo);
+        reporte[i]->TotalPersonas =contarPersonasEnZona(IBCLandia->headVisitantes,IBCLandia->zonas[i]->codigo);
     }
     /*ordena el arreglo de mas a menos visitantes*/
-    OrdenarZonasMasOcupadas (reporte, tam);
+    ordenarArregloReporteZonaMayorAMenor (reporte, tam);
 
     return reporte;
 }
@@ -1027,7 +1164,7 @@ struct ReporteZona ** ArregloReporteZona(struct Parque *IBCLandia) {
 
 /*recorre las entradas y suma el valor de las entradas usadas que tienen fechaActual*/
     /*retorna el valor de todas las entradas del dia de hoy del visitante*/
-int recorrerEntradas (struct NodoEntrada *headEntradas) {
+int contarValorEntradasUsadasHoyVisitante (struct NodoEntrada *headEntradas) {
     struct NodoEntrada *rec;
     int recaudado = 0;
     struct Entrada *enUso;
@@ -1049,7 +1186,7 @@ int recorrerEntradas (struct NodoEntrada *headEntradas) {
 }
 
 /*recorre recursivamente los visitantes sumando el valor dee sus entradas usadas el mismo dia*/
-int DineroRecaudadoDiario (struct NodoVisitante *headVisitantes) {
+int obtenerDineroRecaudadoEnElDia (struct NodoVisitante *headVisitantes) {
     struct Visitante *actual;
     int recaudado = 0;
 
@@ -1058,18 +1195,18 @@ int DineroRecaudadoDiario (struct NodoVisitante *headVisitantes) {
     actual = headVisitantes->datos;
     /*suma el valor de las entradas usadas del dia*/
     if (actual != NULL) {
-        recaudado += recorrerEntradas(actual->headEntradas);
+        recaudado += contarValorEntradasUsadasHoyVisitante(actual->headEntradas);
     }
     /*recorrer las ramas recursivamente*/
-    recaudado += DineroRecaudadoDiario(headVisitantes->izq);
-    recaudado += DineroRecaudadoDiario(headVisitantes->der);
+    recaudado += obtenerDineroRecaudadoEnElDia(headVisitantes->izq);
+    recaudado += obtenerDineroRecaudadoEnElDia(headVisitantes->der);
 
     return recaudado;
 
 }
 
 /*cuantos integrantes visitantes ingresaron ese dia teniendo en cuenta de que un visitante puede entrar mas de una vez el mismo dia */
-int VisitantesDelDia (struct NodoVisitante *headVisitantes) {
+int contarVisitantesUnicosIngresadosHoy (struct NodoVisitante *headVisitantes) {
     int contador = 0;
     struct Visitante *datos;
 
@@ -1078,27 +1215,25 @@ int VisitantesDelDia (struct NodoVisitante *headVisitantes) {
     datos = headVisitantes->datos;
     if (datos != NULL) {
         /*"recorrerentradas" retorna el monto de todas las entradas del dia de la persona, si pisó aunque sea una vez el parque ese dia su monto sera distinto de 0*/
-        if (recorrerEntradas(datos->headEntradas) != 0) {
+        if (contarValorEntradasUsadasHoyVisitante(datos->headEntradas) != 0) {
             contador++;
         }
     }
     /*recorre el arbol de visitantes recursivamente sumando al contador si cumple*/
-    contador += VisitantesDelDia(headVisitantes->izq);
-    contador += VisitantesDelDia(headVisitantes->der);
+    contador += contarVisitantesUnicosIngresadosHoy(headVisitantes->izq);
+    contador += contarVisitantesUnicosIngresadosHoy(headVisitantes->der);
 
     return contador;
 }
 
-
 /* top 3 atracciones con las fila mas larga */
-
 /*struct auxiliiar para almacenar la atraccion y la fila mas larga registrada dentro de esa atraccion*/
 struct ReporteFilas {
     struct Atraccion *datos;
     int tamFila;
 };
 /* se usa en el malloc, cuenta las atracciones de una zona*/
-int contarAtracciones (struct NodoAtraccion *headAtraccion) {
+int contarAtraccionesEnZona (struct NodoAtraccion *headAtraccion) {
     int contador = 0;
 
     struct NodoAtraccion *rec;
@@ -1113,17 +1248,18 @@ int contarAtracciones (struct NodoAtraccion *headAtraccion) {
     return contador;
 }
 /*cuenta las atracciones del parque*/
-int TotalAtracciones (struct Zona **Zonas,int plibre) {
+int contarAtraccionesEnParque (struct Zona **Zonas,int plibre) {
     int contador = 0;
     int i;
     for (i = 0; i < plibre; i++) {
-        contador += contarAtracciones(Zonas[i]->headAtracciones);
+        contador += contarAtraccionesEnZona(Zonas[i]->headAtracciones);
     }
     return contador;
 
 }
 /*rellena el arreglo dinamico con las atracciones de la zona dada y a la vez el contador de posicion*/
-void CopiarAtracciones (struct ReporteFilas **repFilas, struct Zona *ZonaActual, int * pos) {
+/*La funcion que llama a esta debe realizar free()*/
+void copiarAtraccionesAuxiliar (struct ReporteFilas **repFilas, struct Zona *ZonaActual, int * pos) {
     struct NodoAtraccion *rec;
 
     struct Atraccion *atraccionActual;
@@ -1151,7 +1287,7 @@ void CopiarAtracciones (struct ReporteFilas **repFilas, struct Zona *ZonaActual,
     return;
 }
 /*ordena el arreglo dinamico de structs ReporteFilas de mayor a menor*/
-void OrdenarAtracciones(struct ReporteFilas **reporte,int tam) {
+void ordenarArregloReporteFilasMayorAMenor(struct ReporteFilas **reporte,int tam) {
     int i, j;
     struct ReporteFilas *temporal;/*guarda temporalmente un struct*/
 
@@ -1170,7 +1306,7 @@ void OrdenarAtracciones(struct ReporteFilas **reporte,int tam) {
     }
 }
 /*crea el arreglo dinamico de atraccionees ordenado de mayor a menor*/
-struct ReporteFilas ** ArregloAtracciones (struct Parque *IBCLandia) {
+struct ReporteFilas ** obtenerArregloAtraccionesMayorFilaAMenor (struct Parque *IBCLandia) {
     struct ReporteFilas **TodasLasAtracciones;
     int tam;
     int pos = 0;
@@ -1178,20 +1314,20 @@ struct ReporteFilas ** ArregloAtracciones (struct Parque *IBCLandia) {
 
     if (IBCLandia == NULL) return NULL;
 
-    tam = TotalAtracciones(IBCLandia->zonas,IBCLandia->pLibreZonas);
+    tam = contarAtraccionesEnParque(IBCLandia->zonas,IBCLandia->pLibreZonas);
     TodasLasAtracciones = (struct ReporteFilas **) malloc(tam * sizeof(struct ReporteFilas *));
     /*recorre las zonas y guarda en el arreglo dinamico las atracciones de la zona junto con la fila mas larga registrada de cada una*/
     for (i = 0; i < IBCLandia->pLibreZonas; i++) {
-        CopiarAtracciones(TodasLasAtracciones, IBCLandia->zonas[i], &pos);
+        copiarAtraccionesAuxiliar(TodasLasAtracciones, IBCLandia->zonas[i], &pos);
     }
     /*ordena comparando los reegistros de filas de mayor a menor*/
-    OrdenarAtracciones(TodasLasAtracciones, tam);
+    ordenarArregloReporteFilasMayorAMenor(TodasLasAtracciones, tam);
 
     return TodasLasAtracciones;
 
 }
 /*muestra todas las atracciones ordenadas de mayor a menor dependiendo de la mayor fila registrada*/
-void MostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struct Parque *IBCLandia) {
+void mostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struct Parque *IBCLandia) {
     struct Atraccion *Atraccion;
     int cantAtracciones;
     int i;
@@ -1199,7 +1335,7 @@ void MostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struc
 
     if (reporte == NULL || IBCLandia == NULL) return;
 
-    cantAtracciones = TotalAtracciones(IBCLandia->zonas,IBCLandia->pLibreZonas);
+    cantAtracciones = contarAtraccionesEnParque(IBCLandia->zonas,IBCLandia->pLibreZonas);
 
 
     printf("NOMBRE -> TAMAÑO FILA\n");
@@ -1209,10 +1345,12 @@ void MostrarAtraccionesConMayorFilaDeEspera(struct ReporteFilas **reporte, struc
             printf("%i.%s -> %d \n",i + 1, reporte[i]->datos->nombre, reporte[i]->tamFila);
         }
     }
+
+    /*FALTA UN FREE ACA*/
 }
 
 
-struct NodoAtraccion *crearAtraccion(){
+struct NodoAtraccion *crearAtraccion(void){
     /*Asignacion de memoria a los nuevos struct e inicialización de variables*/
     struct Atraccion *atraccionNueva = malloc(sizeof(struct Atraccion));
     struct NodoAtraccion *nuevoNodo = malloc(sizeof(struct NodoAtraccion));
@@ -1410,14 +1548,17 @@ struct Zona *buscarZonaConMenosPersonal(struct Zona **zonas, int pLibreZonas){
 
 void verificarYAsignarPersonal(struct Zona **zonas, int pLibreZonas, int idZona){
     int i, capacidad, ocupacion;
-    struct Zona *zonaConMenosVisitantes,*zonaConMenosPersonal, *zonaARevisar;
+    struct Zona *zonaConMenosVisitantes,*zonaConMenosPersonal, *zonaARevisar = NULL;
 
     for(i = 0; i < pLibreZonas; i++){
         if(zonas[i] -> codigo == idZona){
             zonaARevisar = zonas[i];
         }
     }
-
+    if (zonaARevisar == NULL) {
+        printf("ERROR: No existe zona con el codigo: %d", idZona);
+        return;
+    }
     capacidad = zonaARevisar -> capacidad;
     ocupacion = zonaARevisar -> ocupacionActual;
 
